@@ -18,7 +18,7 @@ int main(void)
     struct sockaddr_storage client_addr;
     struct sockaddr_in *sa;
     socklen_t client_addr_size;
-    char buff[INET_ADDRSTRLEN];
+    char buff[INET_ADDRSTRLEN], message[1024];
 
     // Ensure struct is empty and load values
     memset(&hints, 0, sizeof(hints));
@@ -61,8 +61,16 @@ int main(void)
             // Close listening file descriptor, child process does not need
             close(sock_fd);
 
-            // Send message to client, close file descriptor and exit child process
-            send(connected_fd, "Connected", 9, 0);
+            while (strcmp(message, "exit") != 0)
+            {
+
+              printf("[+] Enter command: ");
+              fgets(message, sizeof(message), stdin);
+              message[strcspn(message, "\n")] = 0;
+
+              // Send message to client, close file descriptor and exit child process
+              send(connected_fd, message, sizeof(message), 0);
+            }
             close(connected_fd);
             exit(0);
         }
