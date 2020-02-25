@@ -61,9 +61,9 @@ int main(void)
             // Close listening file descriptor, child process does not need
             close(sock_fd);
 
-            while (strcmp(message, "exit") != 0)
+            while (1)
             {
-
+              // Get user input and strip trailing newline '\n'
               printf("[+] Enter command: ");
               fgets(message, sizeof(message), stdin);
               message[strcspn(message, "\n")] = 0;
