@@ -72,7 +72,7 @@ int main(void)
     connect(2). Here, I have specified localhost (for testing purposes), and port
     8080. The information is stored in server_info struct. getaddrinfo() returns
     -1 on error. Error checking should be implemented here. */
-    getaddrinfo("127.0.0.1", "8080", &hints, &server_info);
+    getaddrinfo("127.0.0.1", "8090", &hints, &server_info);
 
     /* Here we are looping through our structure to populate required arguments in
     socket() and bind(). To make a call to socket(), we need the IP version, socket
