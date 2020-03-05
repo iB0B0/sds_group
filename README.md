@@ -7,7 +7,7 @@
 
 #### TO-DO :
 * Connection
-..* Handle multiple clients
+ * Handle multiple clients
 
 * Interface
-..* Current connections
+ * Current connections
