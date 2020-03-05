@@ -9,8 +9,8 @@
 **1. Connectivity**
 
   * 1.1 Client
-    * 1.1.1 Client Framework
-      * 1.1.1.1 Connect to Server
+    * ~~1.1.1 Client Framework~~
+      * ~~1.1.1.1 Connect to Server~~
       
   * 1.2 Server
     * 1.2.1 Server Framework
