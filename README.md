@@ -6,7 +6,7 @@
 
 
 #### TO-DO (incomplete) :
-*1. *Connectivity*
+**1. Connectivity**
 
   * 1.1 Client
     * 1.1.1 Client Framework
@@ -21,7 +21,7 @@
         * 1.2.1.1.4 Obfuscate Data
       
       
-*2. *Communication*
+**2. Communication**
   * 2.1 Remote Code Execution
     * 2.1.1 Server: Send Command
       * 2.1.1.1 Parse User Input
@@ -30,7 +30,7 @@
       * 2.1.2.2 Return Output to Server
       
       
-*3. *Interface* 
+**3. Interface** 
   * 3.1 Server Interface 
     * 3.1.1 Welcome Screen
       * 3.1.1.1 Help Menu
@@ -40,3 +40,6 @@
       * 3.1.2.3 Help Menu
     * 3.1.3 Control Console
     * 3.1.3.1 Help Menu
+
+**4. Persistence**
+  * 4.1 Execute Client on Start-up / Login
