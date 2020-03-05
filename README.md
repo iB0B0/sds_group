@@ -15,18 +15,18 @@
   * 1.2 Server
     * 1.2.1 Server Framework
       * 1.2.1.1 Accept Multiple Client Connections
-        * 1.2.1.1.1 Accept Singular Client Connection
-        * 1.2.1.1.2 Listen for Client Connection
-        * 1.2.1.1.3 Close Client Connection
-        * 1.2.1.1.4 Obfuscate Data
+        * ~~1.2.1.1.1 Accept Singular Client Connection~~
+        * ~~1.2.1.1.2 Listen for Client Connection~~
+        * ~~1.2.1.1.3 Close Client Connection~~
+      * 1.2.1.2 Obfuscate Data
       
       
 **2. Communication**
   * 2.1 Remote Code Execution
-    * 2.1.1 Server: Send Command
-      * 2.1.1.1 Parse User Input
+    * ~~2.1.1 Server: Send Command~~
+      * ~~2.1.1.1 Parse User Input~~
     * 2.1.2 Client: Execute Command
-      * 2.1.2.1 Parse Command from Server
+      * ~~2.1.2.1 Parse Command from Server~~
       * 2.1.2.2 Return Output to Server
       
       
