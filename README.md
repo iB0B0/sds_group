@@ -6,7 +6,7 @@
 
 
 #### TO-DO (incomplete) :
-* 1. *Connectivity*
+* \1. *Connectivity*
 
   * 1.1 Client
     * 1.1.1 Client Framework
@@ -20,7 +20,7 @@
         * 1.2.1.1.3 Close Client Connection
         * 1.2.1.1.4 Obfuscate Data
         
-* 2. *Communication*
+* \2. *Communication*
   * 2.1 Remote Code Execution
     * 2.1.1 Server: Send Command
       * 2.1.1.1 Parse User Input
@@ -28,7 +28,7 @@
       * 2.1.2.1 Parse Command from Server
       * 2.1.2.2 Return Output to Server
       
-* 3. *Interface* 
+* \3. *Interface* 
   * 3.1 Server Interface 
     * 3.1.1 Welcome Screen
       * 3.1.1.1 Help Menu
