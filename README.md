@@ -11,7 +11,7 @@
   * 1.1 Client
     * ~~1.1.1 Client Framework~~
       * ~~1.1.1.1 Connect to Server~~
-     * 1.1.2 Deployment
+    * 1.1.2 Deployment
       * 1.1.2.1 Allow configuration of master IP/port
       
   * 1.2 Server
