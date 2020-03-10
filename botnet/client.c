@@ -14,7 +14,7 @@ void kill_handler(int sig)
 int main(void)
 {
     signal(SIGINT, kill_handler);
-    connection server_con = connect_to("127.0.0.1", 8080);
+    connection server_con = connect_to("10.0.0.123", 8080);
     //check if the struct has been filled
     if (server_con.dest_ip == NULL)
     {

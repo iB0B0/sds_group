@@ -6,7 +6,7 @@
 
 int main(void)
 {
-    connection client_con = bind_socket("127.0.0.1", 8080);
+    connection client_con = bind_socket("10.0.0.123", 8080);
     socklen_t client_addr_size;
     char buff[INET_ADDRSTRLEN], data[1024];
     int connected_fd;

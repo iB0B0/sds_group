@@ -46,7 +46,7 @@ connection connect_to(char *dest_ip, int dest_port)
     // Connect to socket
     if (connect(sock_fd, (struct sockaddr *)&address, sizeof(address)) == -1)
     {
-      printf("Unable to connect.\n");
+      printf("[+] Fatal Error: Unable to connect.\n");
       exit(-1);
     }
 
