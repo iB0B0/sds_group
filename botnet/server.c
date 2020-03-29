@@ -51,8 +51,8 @@ int main(void)
 
     printf("BEFORE THREAD\n");
     // Main loop for accepting queued connections
-    pthread_create(&thread1, NULL, handle_connection, (void *)args);
-    printf("AFTER THREAD\n");
+    int errorNo = pthread_create(&thread1, NULL, handle_connection, (void *)args);
+    printf("AFTER THREAD -> %d\n", errorNo);
 
     if (fd_count == 4){
         if (!fork()) {
@@ -73,19 +73,21 @@ int main(void)
         }
     }
 
+    pthread_join(thread1, NULL);
+
     // Exit
     return 0;
 }
 
 
 
-void* handle_connection(void *arguments)
+void* handle_connection(void *args_main)
 {
+  printf("ENTERED THREAD\n");
+  
   socklen_t client_addr_size;
   int new_fd;
-  struct arguments *args = arguments;
-
-  printf("ENTERED THREAD\n");
+  struct arguments *args = (struct arguments*)args_main;
 
   while(1)
   {
