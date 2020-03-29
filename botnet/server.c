@@ -1,19 +1,31 @@
 // Listens for connection and sends message to connected client
+// Messy, needs tidying up.
+// Code currently not working.
 
 #include "simple_networking.h"
 #include <poll.h>
 #include <pthread.h>
 
-void handle_connection(struct pollfd *pfds[], int *fd_count, int listener_fd, connection client_con, int *fd_size);
+void* handle_connection(void *arguments);
 void print_connection(connection client_con, int new_fd);
 void append_pfds(struct pollfd *pfds[], int new_fd, int *fd_count, int *fd_size);
 
+struct arguments
+{
+  int fd_count;
+  int listener_fd;
+  connection client_con;
+  int *fd_size;
+  struct pollfd *pfds;
+};
 
 int main(void)
 {
     connection client_con = bind_socket("127.0.0.1", 8080);
     char data[1024];
     int listener_fd;
+    pthread_t thread1;
+
 
     int fd_count = 0;
     int fd_size = 5;
@@ -27,9 +39,20 @@ int main(void)
 
     printf("[+] Server awaiting connection...\n");
 
-    // Main loop for accepting queued connections
-    handle_connection(&pfds, &fd_count, listener_fd, client_con, &fd_size);
+    struct arguments *args;
+    args = malloc(sizeof(struct arguments));
 
+    args->pfds = pfds;
+    args->fd_count = fd_count;
+    args->listener_fd = listener_fd;
+    args->client_con = client_con;
+    args->fd_size = &fd_size;
+
+
+    printf("BEFORE THREAD\n");
+    // Main loop for accepting queued connections
+    pthread_create(&thread1, NULL, handle_connection, (void *)args);
+    printf("AFTER THREAD\n");
 
     if (fd_count == 4){
         if (!fork()) {
@@ -56,14 +79,17 @@ int main(void)
 
 
 
-void handle_connection(struct pollfd *pfds[], int *fd_count, int listener_fd, connection client_con, int *fd_size)
+void* handle_connection(void *arguments)
 {
   socklen_t client_addr_size;
   int new_fd;
+  struct arguments *args = arguments;
+
+  printf("ENTERED THREAD\n");
 
   while(1)
   {
-      int poll_count = poll((*pfds), (*fd_count), -1);
+      int poll_count = poll(args->pfds, args->fd_count, -1);
 
       if (poll_count == -1) {
           perror("poll");
@@ -71,24 +97,24 @@ void handle_connection(struct pollfd *pfds[], int *fd_count, int listener_fd, co
       }
 
       // run through existing connections looking for data to read
-      for(int i = 0; i < (*fd_count); i++) {
+      for(int i = 0; i < args->fd_count; i++) {
 
           //check if someone is ready to read
-          if ((*pfds)[i].revents & POLLIN) { // one is ready to read
+          if (args->pfds[i].revents & POLLIN) { // one is ready to read
 
-              if ((*pfds)[i].fd == listener_fd) {
+              if (args->pfds[i].fd == args->listener_fd) {
                   // if listener is ready to read, handle new connection
 
                   // Accept queued connection and assign new file descriptor
-                  client_addr_size = sizeof(client_con.client_addr);
-                  new_fd = accept(client_con.sock_fd, (struct sockaddr *)&client_con.client_addr, &client_addr_size);
+                  client_addr_size = sizeof(args->client_con.client_addr);
+                  new_fd = accept(args->client_con.sock_fd, (struct sockaddr *)&args->client_con.client_addr, &client_addr_size);
 
                   if (new_fd == -1) {
                       perror("accept");
                   }
                   else {
-                    append_pfds(pfds, new_fd, fd_count, fd_size);
-                    print_connection(client_con, new_fd);
+                    append_pfds(&args->pfds, new_fd, &args->fd_count, args->fd_size);
+                    print_connection(args->client_con, new_fd);
                   }
               }
           }
