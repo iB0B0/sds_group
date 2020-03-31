@@ -25,6 +25,8 @@ int main(void)
     char data[1024];
     int listener_fd;
     pthread_t thread1;
+    socklen_t client_addr_size;
+    int new_fd;
 
 
     int fd_count = 0;
@@ -42,12 +44,53 @@ int main(void)
     struct arguments *args;
     args = malloc(sizeof(struct arguments));
 
+pfds[1].fd = 7;
+pfds[2].fd = 9;
+
     args->pfds = pfds;
     args->fd_count = fd_count;
     args->listener_fd = listener_fd;
     args->client_con = client_con;
     args->fd_size = &fd_size;
 
+    printf("%d %d\n", args->pfds[0].fd, args[0].fd_count);
+    printf("%d %d\n", args[0].pfds[1].fd, args[0].fd_count);
+    printf("%d %d\n", args[0].pfds[2].fd, args[0].fd_count);
+
+    while(1)
+    {
+
+
+        int poll_count = poll(args->pfds, args->fd_count, -1);
+
+        if (poll_count == -1) {
+            perror("poll");
+            exit(1);
+        }
+        // run through existing connections looking for data to read
+        for(int i = 0; i < args->fd_count; i++) {
+
+            //check if someone is ready to read
+            if (args->pfds[i].revents & POLLIN) { // one is ready to read
+
+                if (args->pfds[i].fd == args->listener_fd) {
+                    // if listener is ready to read, handle new connection
+
+                    // Accept queued connection and assign new file descriptor
+                    client_addr_size = sizeof(args->client_con.client_addr);
+                    new_fd = accept(args->client_con.sock_fd, (struct sockaddr *)&args->client_con.client_addr, &client_addr_size);
+
+                    if (new_fd == -1) {
+                        perror("accept");
+                    }
+                    else {
+                      append_pfds(&args->pfds, new_fd, &args->fd_count, args->fd_size);
+                      print_connection(args->client_con, new_fd);
+                    }
+                }
+            }
+        }
+    }
 
     printf("BEFORE THREAD\n");
     // Main loop for accepting queued connections
@@ -84,13 +127,19 @@ int main(void)
 void* handle_connection(void *args_main)
 {
   printf("ENTERED THREAD\n");
-  
+
   socklen_t client_addr_size;
   int new_fd;
   struct arguments *args = (struct arguments*)args_main;
 
+
+  printf("%d %d\n", args->pfds[0].fd, args->fd_count);
+  printf("%d %d\n", args[0].pfds[1].fd, args[0].fd_count);
+  printf("%d %d\n", args[0].pfds[2].fd, args[0].fd_count);
   while(1)
   {
+
+
       int poll_count = poll(args->pfds, args->fd_count, -1);
 
       if (poll_count == -1) {
