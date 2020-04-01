@@ -46,7 +46,7 @@ connection connect_to(char *dest_ip, int dest_port)
     // Connect to socket
     if (connect(sock_fd, (struct sockaddr *)&address, sizeof(address)) == -1)
     {
-      printf("[+] Fatal Error: Unable to connect.\n");
+      perror("[-] Fatal Error: Unable to connect.\n");
       exit(-1);
     }
 
@@ -87,6 +87,10 @@ connection bind_socket(char *ip_address, int port)
     // Free struct as no longer in use
     freeaddrinfo(server_info);
 
+    // did this get removed or placed somewhere else? need to add error checking
+    // to this
+    listen(sock_fd, 5);
+
     // Return the connection
     connection return_con;
     return_con.dest_ip = ip_address;
@@ -115,7 +119,7 @@ int send_raw_data(message data)
     printf("retrieve machine from data struct\n");
     struct machine destination = data.dest_machine;
     struct machine source = data.source_machine;
-    
+
     printf("Dest Data: Is master: %d, IP: %s Port: %d\n", destination.is_master, destination.ip_address, destination.open_port);
 
     printf("setup packet header\n");

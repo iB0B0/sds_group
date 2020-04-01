@@ -16,6 +16,7 @@ int main(void)
     //LEAVE COMMENTED DURING DEV
     //signal(SIGINT, kill_handler);
     connection server_con = connect_to("127.0.0.1", 8080);
+
     //check if the struct has been filled
     if (server_con.dest_ip == NULL)
     {
