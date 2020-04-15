@@ -28,7 +28,6 @@ struct arguments
     struct pollfd *pfds;
 };
 
-
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int main(void)
@@ -87,13 +86,13 @@ void* handle_connection(void *args_main)
     while(1)
     {
         // Set lock
-        pthread_mutex_lock(&mutex);
+        // pthread_mutex_lock(&mutex);
 
         // Poll the array for events and set .revents
         int rc = poll(args->pfds, args->fd_count, -1);
 
         // Release lock
-        pthread_mutex_unlock(&mutex);
+        // pthread_mutex_unlock(&mutex);
 
         // Check return code of poll(). Return error if -1
         if (rc == -1)
