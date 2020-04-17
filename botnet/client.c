@@ -21,8 +21,8 @@ int main(void)
     //check if the struct has been filled
     if (server_con.dest_ip == NULL)
     {
-      printf("[+] Could not connect to server.\n");
-      exit(-1);
+        printf("[+] Could not connect to server.\n");
+        exit(-1);
     }
 
     printf("[+] Client connected. IP: %s, Port: %d, Socket: %d\n", server_con.dest_ip, server_con.dest_port, server_con.sock_fd);
@@ -74,6 +74,7 @@ int main(void)
 
     }while(exit == 0 && kill_rcv == 0);
 
+    // Print statement for testing purposes only. Will be removed from final copy.
     printf("[+] Closing connection\n");
     // Close file descriptor
     close(server_con.sock_fd);

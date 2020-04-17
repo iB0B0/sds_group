@@ -14,7 +14,6 @@ Code has no functionality to exit cleanly.
 // Function declarations
 void* handle_connection(void *arguments);
 void* bot_command(void *args_main);
-void print_connection(connection client_con, int new_fd);
 void append_pfds(struct pollfd *pfds[], int new_fd, int *fd_count, int *fd_size);
 
 
@@ -82,17 +81,12 @@ void* handle_connection(void *args_main)
     socklen_t client_addr_size;
     int new_fd;
     struct arguments *args = (struct arguments*)args_main;
+    char buff[1024];
 
     while(1)
     {
-        // Set lock
-        // pthread_mutex_lock(&mutex);
-
         // Poll the array for events and set .revents
         int rc = poll(args->pfds, args->fd_count, -1);
-
-        // Release lock
-        // pthread_mutex_unlock(&mutex);
 
         // Check return code of poll(). Return error if -1
         if (rc == -1)
@@ -101,7 +95,7 @@ void* handle_connection(void *args_main)
             exit(1);
         }
 
-        // Run through existing connections and look for data to read
+        // Run through connections and look for data to read
         for (int i = 0; i < args->fd_count; i++)
         {
             // Check if socket is ready to read
@@ -130,9 +124,22 @@ void* handle_connection(void *args_main)
 
                         // Release lock
                         pthread_mutex_unlock(&mutex);
+                    }
+                }
+                else
+                {
+                    // If client has disconnected, remove from array.
+                    if (recv(args->pfds[i].fd, buff, sizeof(buff), 0) < 1)
+                    {
+                        // Print statement purely for testing purposes. Will be removed from final copy.
+                        printf("Client closed. Removing client from socket %d.\n",args->pfds[i].fd);
 
-                        // Print connection
-                        print_connection(args->client_con, new_fd);
+                        // Close file descriptor for client
+                        close(args->pfds[i].fd);
+
+                        // Decrement count of connected clients and replace disconnected client with last element of array
+                        args->fd_count--;
+                        args->pfds[i] = args->pfds[args->fd_count];
                     }
                 }
             }
@@ -140,22 +147,8 @@ void* handle_connection(void *args_main)
     }
 }
 
-// Print IP and FD of new connection
-// Should this be removed? Is it necessary and scalable?
-void print_connection(connection client_con, int new_fd)
-{
-    // Retrieve IP address of accepted client
-    client_con.sa = (struct sockaddr_in *)&client_con.client_addr;
-    struct in_addr ipAddr = client_con.sa->sin_addr;
-
-    char buff[INET_ADDRSTRLEN];
-
-    // Convert client information to readable format and print
-    inet_ntop(client_con.client_addr.ss_family, &ipAddr, buff, sizeof(buff));
-    printf("[+] Server: got connection from: %s on socket %d\n", buff, new_fd);
-}
-
 // Append new connection file descriptor to array
+// Function from beej (http://beej.us/guide/bgnet/html/)
 void append_pfds(struct pollfd *pfds[], int new_fd, int *fd_count, int *fd_size)
 {
     // Check if array is full and double size if necessary
@@ -192,35 +185,20 @@ void* bot_command(void *args_main)
         // Display current list of connections
         if (strcmp(data, "show") == 0)
         {
-            // Set lock
-            pthread_mutex_lock(&mutex);
-            if (args->fd_count == 1)
-            {
-                continue;
-            }
-            
-
             // Iterate through array and print client information
             for (int i = 0; i < args->fd_count; i++)
             {
                 printf("client %d is on fd %d\n", i, args->pfds[i].fd);
             }
-
-            // Release lock
-            pthread_mutex_unlock(&mutex);
         }
 
         // Send command to ALL connections except listener
         else if (strcmp(data, "all") == 0)
         {
-
             // Prompt user for input and remove trailing newline
             printf("[+] Enter command: ");
             fgets(data, sizeof(data), stdin);
             data[strcspn(data, "\n")] = 0;
-
-            // Set lock
-            pthread_mutex_lock(&mutex);
 
             // Iterate through array, omitting listener, and send data to each file descriptor
             // Should we thread this? It would "unblock" the terminal if a client fails to send.
@@ -242,15 +220,11 @@ void* bot_command(void *args_main)
                 recieved_data[bytes_recv] = '\0';
                 printf("Client %d said: %s\n", i, recieved_data);
             }
-
-            // Release lock
-            pthread_mutex_unlock(&mutex);
         }
 
         // Send command to SINGLE client
         else if (strcmp(data, "single") == 0)
         {
-
             // Prompt user for input, remove trailing newline and convert input to int
             printf("[+] Enter client: ");
             fgets(data, sizeof(data), stdin);
@@ -262,11 +236,9 @@ void* bot_command(void *args_main)
             fgets(data, sizeof(data), stdin);
             data[strcspn(data, "\n")] = 0;
 
-            // Set lock
-            pthread_mutex_lock(&mutex);
-
             // Send data to client specified by user input, based on array index
             send(args->pfds[num].fd, data, sizeof(data), 0);
+<<<<<<< HEAD
 
             // Wait for a response
             char recieved_data[8192];
@@ -283,6 +255,8 @@ void* bot_command(void *args_main)
 
             // Release lock
             pthread_mutex_unlock(&mutex);
+=======
+>>>>>>> master
         }
 
         // Exit control of bot
