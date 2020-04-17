@@ -238,7 +238,6 @@ void* bot_command(void *args_main)
 
             // Send data to client specified by user input, based on array index
             send(args->pfds[num].fd, data, sizeof(data), 0);
-<<<<<<< HEAD
 
             // Wait for a response
             char recieved_data[8192];
@@ -255,8 +254,6 @@ void* bot_command(void *args_main)
 
             // Release lock
             pthread_mutex_unlock(&mutex);
-=======
->>>>>>> master
         }
 
         // Exit control of bot
