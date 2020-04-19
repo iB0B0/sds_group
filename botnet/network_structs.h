@@ -1,3 +1,5 @@
+#include <poll.h>
+
 struct machine
 {
     int machine_id;
@@ -14,7 +16,7 @@ typedef struct connection
     char *dest_ip;
     int dest_port;
     int sock_fd;
-    int thread_id;
+    char *hostname;
     struct pollfd *pfds;
     struct sockaddr_storage client_addr;
     struct sockaddr_in *sa;
@@ -37,7 +39,8 @@ typedef struct
 // It expects the connection passed to it to be the head.
 connection* create_connection(connection* current, int position)
 {
-    connection* new_con = (connection*)malloc(sizeof(connection));
+    connection *new_con = (connection*)malloc(sizeof(new_con));
+    (*new_con).pfds = malloc(sizeof(struct pollfd));
 
     switch (position)
     {
