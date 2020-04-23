@@ -334,9 +334,26 @@ void* bot_command(void *args_main)
         // Exit control of bot
         else if (strcmp(data, "exit") == 0)
         {
-            printf("\nExiting...\n");
-            exit(0);
+            printf("Are You Sure? yes/no\n");
+            fgets(data, sizeof(data), stdin);
+            data[strcspn(data, "\n")] = 0;
+            {   
+                    while(1)
+                    {
+                    if (strcmp(data,"yes") == 0)
+                    {
+                        printf("\nExiting...  \n");
+                        exit(0);
+                    }
+                    else if (strcmp(data,"no") == 0)
+                    {
+                        break;
+                    }
+                }
+            }
+        
         }
+        
     }
 }
 
