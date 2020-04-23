@@ -30,6 +30,7 @@
     * 2.1.2 Client: Execute Command
       * ~~2.1.2.1 Parse Command from Server~~
       * 2.1.2.2 Return Output to Server
+      * 2.1.2.3 Allow for session-like terminal functionality
       
       
 **3. Interface** 
