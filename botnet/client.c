@@ -115,6 +115,7 @@ int main(void)
         // Send the data and close the pipe
         send(server_con.sock_fd, buffer, strlen(buffer), 0);
         pclose(cmdptr);
+        printf("[+] Completed command: %s\n", data_recieved.data);
       }
 
     }while(exit == 0 && kill_rcv == 0);
