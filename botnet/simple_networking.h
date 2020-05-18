@@ -87,9 +87,7 @@ connection bind_socket(char *ip_address, int port)
     // Free struct as no longer in use
     freeaddrinfo(server_info);
 
-    // did this get removed or placed somewhere else? need to add error checking
-    // to this
-    listen(sock_fd, 5);
+    listen(sock_fd, 20);
 
     // Return the connection
     connection return_con;

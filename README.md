@@ -19,7 +19,7 @@
       * 1.2.1.1 Accept Multiple Client Connections
         * ~~1.2.1.1.1 Accept Singular Client Connection~~
         * ~~1.2.1.1.2 Listen for Client Connection~~
-        * ~~1.2.1.1.3 Close Client Connection~~
+        * 1.2.1.1.3 Close Client Connection
       * 1.2.1.2 Obfuscate Data
       
       
@@ -30,6 +30,7 @@
     * 2.1.2 Client: Execute Command
       * ~~2.1.2.1 Parse Command from Server~~
       * 2.1.2.2 Return Output to Server
+      * 2.1.2.3 Allow for session-like terminal functionality
       
       
 **3. Interface** 
