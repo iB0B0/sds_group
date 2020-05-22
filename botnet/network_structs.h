@@ -60,7 +60,7 @@ connection* create_connection(connection* current, int position)
             // Set our new connection to point to the current head of the list
             new_con->next = current;
             break;
-            
+
         default:
             // Subtract 2 to get the number of "hops" to our position
             if (position < 2)
@@ -88,7 +88,7 @@ connection* create_connection(connection* current, int position)
             // Insert it into the list
             current->next = new_con;
             new_con->next = next_con;
-            
+
             break;
     }
     return new_con;

