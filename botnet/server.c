@@ -406,7 +406,7 @@ void* bot_command(void* arg)
 // Function to print welcome screen
 void print_welcome_message()
 {
-    //system("clear");
+    system("clear");
 
 
     printf("\n******************************************************************************\n");
@@ -434,7 +434,7 @@ void print_help_screen()
     printf("help             : List of commands from console    \n");
     printf("exit             : Terminate the program            \n");
     printf("command          : Enter command control mode       \n");
-    printf("back             : Back to the previous page        \n");
+    //printf("back             : Back to the previous page        \n");
     printf("=====================================================\n\n");
     return;
 }
