@@ -43,7 +43,7 @@ connection connect_to(char *dest_ip, int dest_port)
     // Create socket
     sock_fd = socket(PF_INET, SOCK_STREAM, 0);
 
-    // Connect to socket
+    // Connect to socket, sleep if connection not available and retry
     int connect_return = 1;
     while (connect_return != 0)
     {
@@ -71,6 +71,7 @@ connection bind_socket(char *ip_address, int port)
     struct sockaddr_storage client_addr;
     struct sockaddr_in *sa;
     socklen_t client_addr_size;
+    int optval = 1;
 
     // Convert port int to const char *
     char port_char[8];
@@ -82,10 +83,11 @@ connection bind_socket(char *ip_address, int port)
     hints.ai_socktype = SOCK_STREAM;
     getaddrinfo(ip_address, port_char, &hints, &server_info);
 
-    // Loop through results and bind to socket
+    // Loop through results and bind to socket - allow reuse of port
     for (results = server_info; results != NULL; results = results->ai_next)
     {
         sock_fd = socket(results->ai_family, results->ai_socktype, results->ai_protocol);
+        setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
         bind(sock_fd, results->ai_addr, results->ai_addrlen);
         break;
     }

