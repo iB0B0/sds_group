@@ -259,9 +259,10 @@ int main(void)
     setsid();
     ioctl(0, TIOCSCTTY, 1);
 
-    // Execvp is a bit funky with args, so create an empty array
-    char *args[0];
-    execvp("/bin/bash", args);
+    // Execvp is a bit funky with args, so create an array with only bash in it
+    // This took like 3 days to work out...
+    char *args[] = {"/bin/bash", NULL};
+    execvp(args[0], args);
 
     // In theory we shouldn't get to here, so something has gone horribly wrong...
     exit(1);
