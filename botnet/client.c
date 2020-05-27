@@ -1,6 +1,7 @@
 // Simple client architecture
 // Connects to host, reads message, disconnects
 #define _XOPEN_SOURCE 600
+#define _DEFAULT_SOURCE
 #include <stdlib.h>
 #include <fcntl.h>
 #include <errno.h>
