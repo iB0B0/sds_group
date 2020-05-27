@@ -451,7 +451,7 @@ void print_help_screen()
     printf("show             : Display list of connected clients\n");
     printf("help             : List of commands from console    \n");
     printf("exit             : Terminate the program            \n");
-    printf("command          : Enter command control mode       \n");
+    printf("command          : Enter command control mode       \n")
     printf("=====================================================\n\n");
     return;
 }
