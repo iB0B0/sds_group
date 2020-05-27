@@ -94,6 +94,19 @@ connection* create_connection(connection* current, int position)
     return new_con;
 }
 
+int delete_connection(connection *head, connection *del_con)
+{
+    connection *tmp1 = head;
+    connection *tmp2 = head;
+    // Move to the connection before our to-be-deleted connection
+    while (tmp1->next != del_con)
+    {
+        tmp1 = tmp1->next;
+    }
+    tmp2 = tmp1->next;
+    tmp1->next = tmp2->next;    
+}
+
 int count_connections(connection* head)
 {
     int number = 1;

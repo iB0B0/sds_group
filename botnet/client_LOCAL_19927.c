@@ -2,7 +2,6 @@
 // Simple client architecture
 // Connects to host, reads message, disconnects
 #define _XOPEN_SOURCE 600
-#define _DEFAULT_SOURCE
 #include <stdlib.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -211,12 +210,7 @@ pid_t bash_session(connection server_con)
     setsid();
     ioctl(0, TIOCSCTTY, 1);
 
-<<<<<<< HEAD
     // Execvp is a bit funky with args, so create an empty array
-=======
-    // Execvp is a bit funky with args, so create an array with only bash in it
-    // This took like 3 days to work out...
->>>>>>> 962e9733de22e9ea6ac632df2afd193ede5390fb
     char *args[] = {"/bin/bash", NULL};
     execvp(args[0], args);
 
