@@ -52,7 +52,11 @@ connection connect_to(char *dest_ip, int dest_port)
         {
             break;
         }
-        sleep(5);
+
+        // Add a little jitter to the retry attempts
+        srand(time(NULL));
+        int time_to_sleep = rand() % 10;
+        sleep(time_to_sleep);
     }
     
 

