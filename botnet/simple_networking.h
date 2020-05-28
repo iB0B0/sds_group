@@ -39,7 +39,7 @@ connection connect_to(char *dest_ip, int dest_port)
     address.sin_family = AF_INET;
     address.sin_port = htons(dest_port);
     inet_pton(AF_INET, dest_ip, &(address.sin_addr));
-
+    
     // Create socket
     sock_fd = socket(PF_INET, SOCK_STREAM, 0);
 

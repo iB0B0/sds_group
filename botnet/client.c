@@ -223,7 +223,13 @@ pid_t bash_session(connection server_con)
 void parse_single_command(message data_recieved, connection server_con)
 {
     FILE *cmdptr;
-    cmdptr = popen(data_recieved.data, "r");
+    char *cmdstr = malloc(strlen(data_recieved.data) +6);
+    memset(cmdstr, '\0', strlen(cmdstr));
+    strcat(cmdstr, data_recieved.data);
+    strcat(cmdstr, " 2>&1");
+    printf("Executing %s\n", cmdstr);
+    cmdptr = popen(cmdstr, "r");
+    printf("Finsihed command.\n");
 
     if (cmdptr == NULL)
     {
@@ -249,8 +255,10 @@ void parse_single_command(message data_recieved, connection server_con)
       }
     }
 
+    buffer[length] = '\0';
+
     // Send the data and close the pipe
-    send(server_con.sock_fd, buffer, strlen(buffer), 0);
+    send(server_con.sock_fd, buffer, length, 0);
     pclose(cmdptr);
 }
 
@@ -303,6 +311,7 @@ int main(void)
     else {
       parse_single_command(data_recieved, server_con);
     }
+      memset(data_recieved.data, '\0',strlen(data_recieved.data));
   }
   return 0;
 }

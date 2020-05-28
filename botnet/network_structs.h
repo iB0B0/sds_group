@@ -94,6 +94,7 @@ connection* create_connection(connection* current, int position)
     return new_con;
 }
 
+// Remove connection from linked list
 int delete_connection(connection *head, connection *del_con)
 {
     connection *tmp1 = head;
@@ -107,6 +108,7 @@ int delete_connection(connection *head, connection *del_con)
     tmp1->next = tmp2->next;    
 }
 
+// Count number of connections, excluding server
 int count_connections(connection* head)
 {
     int number = 1;
