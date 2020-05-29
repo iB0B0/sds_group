@@ -1,0 +1,38 @@
+[
+        {
+            "type":"Outputs",
+            "properties":
+                {
+                    "hostName":"Hostname1",
+                    "command":"ls",
+                    "date":21022020,
+                    "time":2104,
+                    "ip":"127.0.0.1"
+                },
+            "returned":
+                {
+                    "results": [
+                        "client.c\nserver.c"
+                    ]
+                },
+            "id":"001"
+        },
+        {
+            "type":"Outputs",
+            "properties":
+                {
+                    "hostName":"Hostname1",
+                    "command":"ls",
+                    "date":21022020,
+                    "time":2104,
+                    "ip":"127.0.0.1"
+                },
+            "returned":
+                {
+                    "results": [
+                        "client.c\nserver.c"
+                    ]
+                },
+            "id":"001"
+        }
+    ]

@@ -1,0 +1,1 @@
+{ "type": "outputs", "properties": { "hostname": "Bobo", "input command": "ls", "time": "12:12 PM", "date": "22\/02\/2020", "ip address": "127.0.0.1" }, "returned": { "results": "client.c server.c ..." } }

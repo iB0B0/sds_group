@@ -8,7 +8,7 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/botnet/client",
+            "program": "${workspaceFolder}/botnet/server",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

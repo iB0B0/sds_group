@@ -12,6 +12,10 @@ Code has no functionality to exit cleanly.exir
 #include <pthread.h>
 #include <stdio.h>
 #include <sys/select.h>
+#include <json-c/json.h>
+#include <time.h>
+
+
 
 #define SERVER_PORT 8881
 #define TIMEOUT_VALUE 120
@@ -23,7 +27,11 @@ void print_help_screen();
 void print_command_help_screen();
 void *handle_connection(void *my_connection);
 void *bot_command(void *current);
-//void output_to_csv();
+void **get_time(char *buff);
+void **get_date(char *buff);
+json_object *build_json_object(connection *client, char *dataRecieved, char *inputCmd);
+void output_to_json(json_object *jsonObject);
+
 
 // Global Graceful Exit Flag
 int exitflag = 0;
@@ -112,6 +120,20 @@ void *handle_connection(void *arg)
                         connection *new_con = create_connection(head, 0);
                         new_con->pfds->fd = new_fd;
                         new_con->pfds->events = POLLIN;
+
+                        // get client ip (beej)
+                        socklen_t len;
+                        struct sockaddr_storage addr;
+                        char ipstr[INET_ADDRSTRLEN];
+
+                        len = sizeof addr;
+                        getpeername(new_fd, (struct sockaddr*)&addr, &len);
+
+                        // deal with both IPv4
+                        struct sockaddr_in *s = (struct sockaddr_in *)&addr;
+                        new_con->dest_port = ntohs(s->sin_port);
+                        inet_ntop(AF_INET, &s->sin_addr, ipstr, sizeof ipstr);
+                        new_con->dest_ip = ipstr;
 
                         // Get hostname from client
                         send(new_con->pfds->fd, "hostname", 8, 0);
@@ -289,6 +311,9 @@ void *bot_command(void *arg)
                             }
 
                             recieved_data[bytes_recv] = '\0';
+                            printf("%s", tmp->dest_ip);
+                            json_object *timmy = build_json_object(tmp, recieved_data, data);
+                            output_to_json(timmy);
                             printf("%s said: %s\n", tmp->hostname, recieved_data);
 
                             tmp = tmp->next;
@@ -439,20 +464,124 @@ void *bot_command(void *arg)
     }
 }
 
-// void output_to_csv()
-// {
-//     char *outputFile = "output.csv";
-
-//     printf("Writing output to %s\n", outputFile);
-
-//     FILE *fp = fopen(outputFile, "a+");
-
-//     printf("File created. Closing file.\n");
-
-//     fclose(fp);
+void **get_time(char *buff)
+{
+    time_t currentTime;
+    struct tm *convertedTime;
 
 
-// }
+    currentTime = time(NULL);
+    convertedTime = localtime(&currentTime);
+
+    strftime(buff, 100, "%I:%M %p", convertedTime);
+}
+
+void **get_date(char *buff)
+{
+    time_t currentTime;
+    struct tm *convertedTime;
+
+    currentTime = time(NULL);
+    convertedTime = localtime(&currentTime);
+
+    strftime(buff, 100, "%d/%m/%y", convertedTime);
+}
+
+json_object *build_json_object(connection *client, char *dataRecieved, char *inputCmd)
+{
+
+    char *timeBuffer = malloc(10);
+    char *dateBuffer = malloc(10);
+
+    get_time(timeBuffer);
+    get_date(dateBuffer);
+
+    // Create json object
+    json_object *jasonObject = json_object_new_object();
+
+    json_object *objectType = json_object_new_string("outputs");
+
+
+    json_object *propertiesObject = json_object_new_object();
+
+    json_object *hostName = json_object_new_string(client->hostname);
+    json_object *cmdName = json_object_new_string(inputCmd);
+    json_object *time = json_object_new_string(timeBuffer);
+    json_object *date = json_object_new_string(dateBuffer);
+    json_object *ipAddr = json_object_new_string(client->dest_ip);
+    //json_object *port = json_object_new_int(client->dest_port);
+
+
+    json_object_object_add(propertiesObject, "hostname", hostName);
+    json_object_object_add(propertiesObject, "input command", cmdName);
+    json_object_object_add(propertiesObject, "time", time);
+    json_object_object_add(propertiesObject, "date", date);
+    json_object_object_add(propertiesObject, "ip address", ipAddr);
+    //json_object_object_add(propertiesObject, "port number", port);
+
+
+    json_object *returnedObject = json_object_new_object();
+
+    json_object *results = json_object_new_string(dataRecieved);
+
+    json_object_object_add(returnedObject, "results", results);
+
+    json_object_object_add(jasonObject,"type", objectType);
+    json_object_object_add(jasonObject,"properties", propertiesObject);
+    json_object_object_add(jasonObject,"returned", returnedObject);
+
+    return jasonObject;
+}
+
+
+void output_to_json(json_object *jsonObject)
+{
+    FILE *jsonFile;
+
+    if ((jsonFile = fopen("outputs.json", "r+"))) {
+        // file exists
+        //initialise a "dynamic" (ish) array
+        char *wordtoprint;
+        wordtoprint = calloc(10,  sizeof(char *));
+
+        //seek back until we find a comma, adding each char to the array
+        int i = 0;
+        char tmpchar = ' ';
+        
+        while (1)
+        {
+            tmpchar = getc(jsonFile);
+            if(tmpchar == ']' || tmpchar == EOF) {
+                break;
+            }
+            else {
+                if(tmpchar < 126 && tmpchar > 31) {
+                    wordtoprint[i] = tmpchar;
+                    i++;
+                    //allocate more memory to the array for the next char
+                    wordtoprint = realloc(wordtoprint, i*sizeof(char *));
+                }
+            }
+        }
+        fclose(jsonFile);
+
+        jsonFile = fopen("outputs.json", "w");
+        fprintf(jsonFile, "%s", wordtoprint);
+        fputc(',', jsonFile);
+        fprintf(jsonFile, "%s", json_object_to_json_string(jsonObject));
+        fputc(']', jsonFile);
+        fclose(jsonFile);
+
+    }
+    else {
+        // file doesnt exist - queue dirty array fix
+        jsonFile = fopen("outputs.json", "w");
+        fputc('[', jsonFile);
+        fprintf(jsonFile, "%s", json_object_to_json_string(jsonObject));
+        fputc(']', jsonFile);
+    }
+    fclose(jsonFile);
+}
 
 // Function to print welcome screen
 void print_welcome_message()
