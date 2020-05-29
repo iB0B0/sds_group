@@ -124,7 +124,7 @@ int setMaster(struct machine *master)
     master->is_master = 1;
 }
 
-int send_raw_data(message data)
+int send_raw_data(message data, char *ddos_ip)
 {
     printf("retrieve machine from data struct\n");
     struct machine destination = data.dest_machine;

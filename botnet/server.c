@@ -12,7 +12,7 @@ Code has no functionality to exit cleanly.exir
 #include <pthread.h>
 #include <stdio.h>
 #include <sys/select.h>
-#include <json-c/json.h>
+#include "json-c/json.h"
 #include <time.h>
 
 
@@ -73,8 +73,6 @@ void *handle_connection(void *arg)
     socklen_t client_addr_size;
     int new_fd;
     int fd_count = 1;
-    // implemented for testing purposes. REMOVE.
-    int host_x = 0;
 
     printf("[+] Looking for connections\n");
 
@@ -150,9 +148,8 @@ void *handle_connection(void *arg)
                         recieved_data[bytes_recv - 1] = '\0';
 
                         new_con->hostname = malloc(bytes_recv);
-                        sprintf(new_con->hostname, "%s%d", recieved_data, host_x);
-                        host_x++;
-                        printf("New Connection from %s\n", new_con->hostname);
+                        sprintf(new_con->hostname, "%s", recieved_data);
+                        printf("New Connection from %s - %s - %d\n", new_con->hostname, new_con->dest_ip, new_con->dest_port);
 
                         // Release lock
                         pthread_mutex_unlock(&mutex);
