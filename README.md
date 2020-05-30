@@ -11,15 +11,15 @@
   * 1.1 Client
     * ~~1.1.1 Client Framework~~
       * ~~1.1.1.1 Connect to Server~~
-    * 1.1.2 Deployment
-      * 1.1.2.1 Allow configuration of master IP/port
+    * ~~1.1.2 Deployment~~
+      * ~~1.1.2.1 Allow configuration of master IP/port~~
       
   * 1.2 Server
     * 1.2.1 Server Framework
-      * 1.2.1.1 Accept Multiple Client Connections
+      * ~~1.2.1.1 Accept Multiple Client Connections~~
         * ~~1.2.1.1.1 Accept Singular Client Connection~~
         * ~~1.2.1.1.2 Listen for Client Connection~~
-        * 1.2.1.1.3 Close Client Connection
+        * ~~1.2.1.1.3 Close Client Connection~~
       * 1.2.1.2 Obfuscate Data
       
       
