@@ -1,15 +1,19 @@
+#program to set the editable configuration of server and client 
+#It will automatically compile and generate the executable files
+
 import os
+import socket
 
 
-def server_conf(server_ip, server_port, timeout, path):
+def server_conf(server_port, timeout):
     with open('server.c', 'r') as file:
         file_data = file.read()
 
     # Replace the target string
-    file_data = file_data.replace('#define SERVER_IP "127.0.0.1"', server_ip)
+   # file_data = file_data.replace('#define SERVER_IP "127.0.0.1"', server_ip)
     file_data = file_data.replace('#define SERVER_PORT 8881', server_port)
     file_data = file_data.replace('#define TIMEOUT_VALUE 120', timeout)
-    file_data = file_data.replace('#define EXEC_PATH "/bin/bash"', path)
+  #  file_data = file_data.replace('#define EXEC_PATH "/bin/bash"', path)
     # Write the file out again
     with open('tmpserver.c', 'w+') as file:
         file.write(file_data)
@@ -41,13 +45,18 @@ def checkIP(address):
 
 
 
-print("*******************************************************")
-print("*******************************************************")
-print("\n**      Set your server and client configuration     **\n")
-print("*******************************************************")
-print("*******************************************************\n\n")
+print("*****************************************************************")
+print("*****************************************************************")
+print("\n******      Set your server and client configuration     ********\n")
+print("*****************************************************************")
+print("*****************************************************************\n\n")
+
+#get the IP address of the local host
+hostname = socket.gethostname()
+local_IP = socket.gethostbyname(hostname)
+
 #Get the server IP address and check validity
-server_IP =  input(">>Enter server IP: ")
+server_IP =  input(f">>Enter server IP:[Host IP {local_IP:}] ")
 if checkIP(server_IP) == True:
     server_IP =  "#define SERVER_IP " + "\"" + server_IP + "\""
 else:
@@ -76,10 +85,10 @@ else:
     EXEC_PATH ="#define EXEC_PATH " + "\"/bin/bash\""
 
 
-server_conf(server_IP,con_port,timeout,EXEC_PATH)
+server_conf(con_port, timeout)
 client_conf(server_IP,con_port,timeout,EXEC_PATH)
 
-compile_server = 'gcc tmpserver.c -o server -lpthread'
+compile_server = 'gcc tmpserver.c -o server -lpthread -ljson-c'
 os.system(compile_server)
 os.system("rm tmpserver.c")
 
@@ -87,4 +96,7 @@ compile_client= 'gcc tmpclient.c -o client'
 os.system(compile_client)
 os.system("rm tmpclient.c")
 
-print(">>Client and server executables have been generated and ready to run<<") 
+print("\n\n>>Client and server executables have been generated and ready to run<<") 
+
+print("\n\n****************************************************************")
+print("*****************************************************************\n")
