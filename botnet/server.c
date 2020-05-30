@@ -514,6 +514,10 @@ void get_date(char *buff)
     strftime(buff, 100, "%d/%m/%y", convertedTime);
 }
 
+
+// Following json functions - https://json-c.github.io/json-c/json-c-0.10/doc/html/index.html
+
+// https://json-c.github.io/json-c/json-c-0.10/doc/html/json__tokener_8h.html#abf031fdf1e5caab71e2225a99588c6bb
 // Function to read file and store in json object
 json_object *parse_json_file(FILE *fp)
 {
@@ -567,6 +571,7 @@ json_object *parse_json_file(FILE *fp)
     return parsed_json;
 }
 
+// https://json-c.github.io/json-c/json-c-0.10/doc/html/json__object_8h.html#af0ed3555604f39ac74b5e28bc5b1f82c
 // Function to build template of json object
 json_object *build_json_object()
 {
@@ -628,6 +633,7 @@ void append_json_object(json_object *passedJsonObject, connection *client, char 
     json_object_object_add(jsonObject,"properties", propertiesObject);
     json_object_object_add(jsonObject,"returned", returnedObject);
 
+    // https://json-c.github.io/json-c/json-c-0.10/doc/html/json__object_8h.html#aba4e8df5e00bdc91a89bfb775e04ed70
     // Get reference to json array object and store in array var
     struct json_object *array;
     if (!json_object_object_get_ex(passedJsonObject, "returned results", &array))
