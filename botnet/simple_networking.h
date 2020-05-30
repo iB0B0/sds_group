@@ -138,7 +138,6 @@ int send_raw_data(message data, char *ddos_ip)
     u_int32_t src_addr, dst_addr;
     src_addr = inet_addr(source.ip_address);
     dst_addr = inet_addr(destination.ip_address);
-    ;
     src_port = source.open_port;
     dst_port = destination.open_port;
     int sd;
