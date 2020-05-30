@@ -1,5 +1,6 @@
 #include <poll.h>
 
+// Intended to be used for "mesh networking" of botnet clients together. Not currently implemented.
 struct machine
 {
     int machine_id;
@@ -24,6 +25,7 @@ typedef struct connection
     struct connection* next;
 }connection;
 
+// Stores the message that a client gets, intended to be used in conjuction with machine struct.
 typedef struct
 {
     int protocol;
@@ -33,7 +35,7 @@ typedef struct
     struct machine source_machine;
 } message;
 
-// Below is a function which let you add a connection to the list
+// Function which let you add a connection to the list
 // Position 0: Add to end of list, Position 1: Add to "top" of list
 // Where the position is greater than # of connections, it is placed at the end
 // It expects the connection passed to it to be the head.
@@ -105,7 +107,8 @@ int delete_connection(connection *head, connection *del_con)
         tmp1 = tmp1->next;
     }
     tmp2 = tmp1->next;
-    tmp1->next = tmp2->next;    
+    tmp1->next = tmp2->next;
+    return(0);
 }
 
 // Count number of connections, excluding server

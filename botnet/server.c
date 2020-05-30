@@ -28,8 +28,8 @@ void print_help_screen();
 void print_command_help_screen();
 void *handle_connection(void *my_connection);
 void *bot_command(void *current);
-void **get_time(char *buff);
-void **get_date(char *buff);
+void get_time(char *buff);
+void get_date(char *buff);
 json_object *build_json_object();
 void append_json_object(json_object *passedJsonObject, connection *client, char *dataRecieved, char *inputCmd);
 void output_to_json(connection *client, char *dataRecieved, char *inputCmd);
@@ -125,7 +125,7 @@ void *handle_connection(void *arg)
                         struct sockaddr_storage addr;
                         char ipstr[INET_ADDRSTRLEN];
 
-                        len = sizeof addr;
+                        len = sizeof(addr);
                         getpeername(new_fd, (struct sockaddr*)&addr, &len);
 
                         // deal with both IPv4
@@ -171,7 +171,6 @@ void *bot_command(void *arg)
 
     char data[1024];
     char json[4];
-    int rc = 0;
 
     connection *head = (connection *)arg;
     connection *tmp = (connection *)malloc(sizeof(connection));
@@ -484,7 +483,7 @@ void *bot_command(void *arg)
 }
 
 // Function to return current time
-void **get_time(char *buff)
+void get_time(char *buff)
 {
     time_t currentTime;
     struct tm *convertedTime;
@@ -494,10 +493,11 @@ void **get_time(char *buff)
     convertedTime = localtime(&currentTime);
 
     strftime(buff, 100, "%I:%M %p", convertedTime);
+
 }
 
 // Function to return current date
-void **get_date(char *buff)
+void get_date(char *buff)
 {
     time_t currentTime;
     struct tm *convertedTime;
