@@ -42,7 +42,7 @@
       * 3.1.2.2 Jobs List
       * ~~3.1.2.3 Help Menu~~
     * ~~3.1.3 Control Console~~
-    * ~~3.1.3.1 Help Menu~~
+      * ~~3.1.3.1 Help Menu~~
 
 **4. ~~Persistence**~~
   * ~~4.1 Execute Client on Start-up / Login~~
