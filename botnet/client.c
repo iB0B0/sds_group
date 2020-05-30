@@ -165,7 +165,6 @@ pid_t bash_session(connection server_con)
             switch (return_val)
             {
             case -1:
-                fprintf(stderr, "Error %d on select\n", errno);
                 return pid;
 
             case 0:
@@ -195,7 +194,6 @@ pid_t bash_session(connection server_con)
                     }
                     else if (return_val < 0)
                     {
-                        fprintf(stderr, "Error %d on read sockfd\n", errno);
                         exit(1);
                     }
                 }
@@ -212,8 +210,6 @@ pid_t bash_session(connection server_con)
                     }
                     else if (return_val < 0)
                     {
-                        fprintf(stderr, "Error %d on read from bash\n", errno);
-                        perror("Error: ");
                         exit(1);
                     }
                 }
