@@ -17,10 +17,10 @@
   * 1.2 Server
     * 1.2.1 Server Framework
       * ~~1.2.1.1 Accept Multiple Client Connections~~
-        * ~~1.2.1.1.1 Accept Singular Client Connection~~
-        * ~~1.2.1.1.2 Listen for Client Connection~~
-        * ~~1.2.1.1.3 Close Client Connection~~
-      * 1.2.1.2 Obfuscate Data
+      * ~~1.2.1.2 Accept Singular Client Connection~~
+      * ~~1.2.1.3 Listen for Client Connection~~
+      * ~~1.2.1.4 Close Client Connection~~
+      * 1.2.1.5 Obfuscate Data
       
       
 **2. ~~Communication**~~
