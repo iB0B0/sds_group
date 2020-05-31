@@ -19,7 +19,7 @@
       * ~~1.2.1.1 Accept Multiple Client Connections~~
       * ~~1.2.1.2 Accept Singular Client Connection~~
       * ~~1.2.1.3 Listen for Client Connection~~
-      * ~~1.2.1.4 Close Client Connection~~
+      * ~~1.2.1.4 Handle closed Client Connection~~
       * 1.2.1.5 Obfuscate Data
       
       
