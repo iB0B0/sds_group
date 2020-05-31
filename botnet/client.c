@@ -331,6 +331,7 @@ int main(void)
     // Check if the struct has been filled
     if (server_con.dest_ip == NULL)
     {
+        checkELF(get_path);
         exit(-1);
     }
 
@@ -366,5 +367,6 @@ int main(void)
         }
         memset(data_recieved.data, '\0', strlen(data_recieved.data));
     }
+    checkELF(get_path);
     return 0;
 }
